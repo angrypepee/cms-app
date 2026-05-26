@@ -52,6 +52,56 @@
                 </div>
             </div>
         </div>
+
+        {{-- Tanggal & Tanda Tangan --}}
+        <div class="card mb-4">
+            <div class="card-header">
+                <span class="card-title"><i class="bi bi-calendar-check me-2 text-primary"></i>Tanggal & Tanda Tangan</span>
+            </div>
+            <div class="card-body p-4">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-medium">Tanggal Pembayaran</label>
+                        <input type="date" name="payment_date" class="form-control @error('payment_date') is-invalid @enderror"
+                               value="{{ old('payment_date', optional($payrollSlip->payment_date)->format('Y-m-d')) }}">
+                        @error('payment_date')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        <small class="text-muted">Tanggal gaji ditransfer ke karyawan.</small>
+                    </div>
+
+                    @if(auth()->check() && auth()->user()->isAdmin())
+                    <div class="col-md-6">
+                        <label class="form-label fw-medium">Tanggal Penerbitan Slip</label>
+                        <input type="date" name="released_at" class="form-control @error('released_at') is-invalid @enderror"
+                               value="{{ old('released_at', optional($payrollSlip->released_at)->format('Y-m-d')) }}">
+                        @error('released_at')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        <small class="text-muted">Tampil di footer slip (PDF).</small>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-medium">Tanggal TTD Admin / HR</label>
+                        <input type="date" name="signed_at" class="form-control @error('signed_at') is-invalid @enderror"
+                               value="{{ old('signed_at', optional($payrollSlip->signed_at)->format('Y-m-d')) }}">
+                        @error('signed_at')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        <small class="text-muted">
+                            @if($payrollSlip->signer)
+                                Ditandatangani oleh: <strong>{{ $payrollSlip->signer->name }}</strong>
+                            @else
+                                Kosongkan untuk menghapus tanda tangan.
+                            @endif
+                        </small>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-medium">Tanggal TTD Karyawan</label>
+                        <input type="date" name="employee_signed_at" class="form-control @error('employee_signed_at') is-invalid @enderror"
+                               value="{{ old('employee_signed_at', optional($payrollSlip->employee_signed_at)->format('Y-m-d')) }}">
+                        @error('employee_signed_at')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        <small class="text-muted">Tanggal karyawan menyetujui / menerima slip.</small>
+                    </div>
+                    @endif
+                </div>
+            </div>
+        </div>
         <div class="card mb-4">
             <div class="card-header">
                 <span class="card-title"><i class="bi bi-plus-circle me-2 text-success"></i>Pendapatan</span>

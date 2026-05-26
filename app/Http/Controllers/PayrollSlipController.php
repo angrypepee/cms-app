@@ -125,18 +125,21 @@ class PayrollSlipController extends Controller
     public function update(Request $request, PayrollSlip $payrollSlip)
     {
         $validated = $request->validate([
-            'company_id'   => 'required|exists:companies,id',
-            'employee_id'  => 'required|exists:employees,id',
-            'period_month' => 'required|integer|between:1,12',
-            'period_year'  => 'required|integer|min:2000|max:2099',
-            'cutoff_start' => 'nullable|date',
-            'cutoff_end'   => 'nullable|date|after_or_equal:cutoff_start',
-            'payment_date' => 'nullable|date',
-            'notes'        => 'nullable|string|max:1000',
-            'items'        => 'required|array|min:1',
-            'items.*.type'   => 'required|in:income,deduction',
-            'items.*.label'  => 'required|string|max:255',
-            'items.*.amount' => 'required|numeric|min:0',
+            'company_id'         => 'required|exists:companies,id',
+            'employee_id'        => 'required|exists:employees,id',
+            'period_month'       => 'required|integer|between:1,12',
+            'period_year'        => 'required|integer|min:2000|max:2099',
+            'cutoff_start'       => 'nullable|date',
+            'cutoff_end'         => 'nullable|date|after_or_equal:cutoff_start',
+            'payment_date'       => 'nullable|date',
+            'released_at'        => 'nullable|date',
+            'signed_at'          => 'nullable|date',
+            'employee_signed_at' => 'nullable|date',
+            'notes'              => 'nullable|string|max:1000',
+            'items'              => 'required|array|min:1',
+            'items.*.type'       => 'required|in:income,deduction',
+            'items.*.label'      => 'required|string|max:255',
+            'items.*.amount'     => 'required|numeric|min:0',
         ]);
 
         DB::transaction(function () use ($validated, $request, $payrollSlip) {
@@ -151,7 +154,7 @@ class PayrollSlipController extends Controller
                 }
             }
 
-            $payrollSlip->update([
+            $payload = [
                 'company_id'      => $validated['company_id'],
                 'employee_id'     => $validated['employee_id'],
                 'period_month'    => $validated['period_month'],
@@ -164,7 +167,27 @@ class PayrollSlipController extends Controller
                 'take_home_pay'   => $totalIncome - $totalDeduction,
                 'notes'           => $validated['notes'] ?? null,
                 'status'          => $request->input('action') === 'publish' ? 'published' : 'draft',
-            ]);
+            ];
+
+            // Admin-only fields: release date and signature dates
+            if (auth()->check() && auth()->user()->isAdmin()) {
+                $payload['released_at'] = $validated['released_at'] ?? null;
+
+                // Signature dates: clearing the input clears the signature
+                if (array_key_exists('signed_at', $validated)) {
+                    $payload['signed_at'] = $validated['signed_at'] ?? null;
+                    if (empty($validated['signed_at'])) {
+                        $payload['signed_by'] = null;
+                    } elseif (! $payrollSlip->signed_by) {
+                        $payload['signed_by'] = auth()->id();
+                    }
+                }
+                if (array_key_exists('employee_signed_at', $validated)) {
+                    $payload['employee_signed_at'] = $validated['employee_signed_at'] ?? null;
+                }
+            }
+
+            $payrollSlip->update($payload);
 
             $payrollSlip->items()->delete();
 

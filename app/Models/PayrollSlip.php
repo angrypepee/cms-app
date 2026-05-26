@@ -12,7 +12,7 @@ class PayrollSlip extends Model
     protected $fillable = [
         'slip_number', 'company_id', 'employee_id',
         'period_month', 'period_year',
-        'cutoff_start', 'cutoff_end', 'payment_date',
+        'cutoff_start', 'cutoff_end', 'payment_date', 'released_at',
         'total_income', 'total_deduction', 'take_home_pay',
         'notes', 'status',
         'signed_by', 'signed_at', 'employee_signed_at',
@@ -24,6 +24,7 @@ class PayrollSlip extends Model
         'cutoff_start'       => 'date',
         'cutoff_end'         => 'date',
         'payment_date'       => 'date',
+        'released_at'        => 'date',
         'total_income'       => 'decimal:2',
         'total_deduction'    => 'decimal:2',
         'take_home_pay'      => 'decimal:2',

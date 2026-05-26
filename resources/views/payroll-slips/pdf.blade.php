@@ -234,18 +234,34 @@
     @endif
 
     {{-- Signature --}}
-    <div class="sig-section">
+    <div class="sig-section" style="justify-content: space-between;">
         <div class="sig-box">
-            <div class="sig-label">{{ $payrollSlip->payment_date ? $payrollSlip->payment_date->format('d/m/Y') : date('d/m/Y') }}</div>
+            <div class="sig-label">
+                {{ $payrollSlip->employee_signed_at ? $payrollSlip->employee_signed_at->format('d/m/Y') : '..............' }}
+            </div>
             <div class="sig-space"></div>
-            <div class="sig-name">HRD / Management</div>
-            <div class="sig-title">{{ $payrollSlip->company->name }}</div>
+            <div class="sig-name">{{ $payrollSlip->employee->name }}</div>
+            <div class="sig-title">Karyawan</div>
+        </div>
+        <div class="sig-box">
+            <div class="sig-label">
+                {{ $payrollSlip->signed_at
+                    ? $payrollSlip->signed_at->format('d/m/Y')
+                    : ($payrollSlip->payment_date ? $payrollSlip->payment_date->format('d/m/Y') : date('d/m/Y')) }}
+            </div>
+            <div class="sig-space"></div>
+            <div class="sig-name">{{ $payrollSlip->signer->name ?? 'HRD / Management' }}</div>
+            <div class="sig-title">{{ $payrollSlip->signer->title ?? $payrollSlip->company->name }}</div>
         </div>
     </div>
 
     {{-- Footer --}}
     <div class="doc-footer">
-        Dokumen ini diterbitkan secara digital oleh {{ $payrollSlip->company->name }}.
+        Diterbitkan
+        @if($payrollSlip->released_at)
+            pada {{ $payrollSlip->released_at->format('d F Y') }}
+        @endif
+        secara digital oleh {{ $payrollSlip->company->name }}.
         Slip gaji ini sah dan tidak memerlukan tanda tangan basah.
     </div>
 
