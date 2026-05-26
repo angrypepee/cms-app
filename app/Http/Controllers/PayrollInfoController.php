@@ -326,9 +326,9 @@ class PayrollInfoController extends Controller
                 'take_home_pay'   => $totals['take_home'],
                 'notes'           => 'Auto-generated dari kesepakatan gaji karyawan.',
                 'status'          => 'published',
-                'signed_by'       => auth()->id(),
-                'signed_at'       => now(),
             ], $transferData));
+
+            $slip->applyDefaultSignatures()->save();
 
             $incomeIdx = 0; $deductionIdx = 0;
             foreach ($agreement as $row) {

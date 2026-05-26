@@ -153,6 +153,8 @@ class PayrollSlipController extends Controller
                     'status'          => $status,
                 ]);
 
+                $slip->applyDefaultSignatures()->save();
+
                 foreach ($usableRows as $i => $r) {
                     PayrollItem::create([
                         'payroll_slip_id' => $slip->id,
@@ -224,6 +226,8 @@ class PayrollSlipController extends Controller
                 'notes'           => $validated['notes'] ?? null,
                 'status'          => $request->input('action') === 'publish' ? 'published' : 'draft',
             ]);
+
+            $slip->applyDefaultSignatures()->save();
 
             foreach ($validated['items'] as $index => $item) {
                 PayrollItem::create([

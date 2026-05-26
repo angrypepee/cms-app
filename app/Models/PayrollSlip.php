@@ -2,8 +2,11 @@
 
 namespace App\Models;
 
+use App\Enums\UserRole;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Hash;
 
 class PayrollSlip extends Model
 {
@@ -106,5 +109,56 @@ class PayrollSlip extends Model
         $seq  = $last ? ((int) substr($last->slip_number, -4)) + 1 : 1;
 
         return $prefix . str_pad((string) $seq, 4, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * Return (and lazily create) the default signer account — "Finance LIM".
+     * Used as the assigner on every slip.
+     */
+    public static function defaultSigner(): User
+    {
+        return User::firstOrCreate(
+            ['email' => 'finance@lim.local'],
+            [
+                'name'      => 'Finance LIM',
+                'title'     => 'Finance LIM',
+                'role'      => UserRole::SignatureAdmin,
+                'password'  => Hash::make(str()->random(32)),
+                'is_active' => true,
+            ]
+        );
+    }
+
+    /**
+     * Stamp default signatures on this slip whenever a signing date is known.
+     * - Assigner  : Finance LIM (signed_by + signed_at)
+     * - Employee  : auto-signed at the same effective date (employee_signed_at)
+     *
+     * Picks the effective date in this order: released_at → payment_date → now.
+     * Only fills fields that are currently null; never overwrites existing values.
+     */
+    public function applyDefaultSignatures(): self
+    {
+        $effective = $this->released_at
+            ?? $this->payment_date
+            ?? Carbon::now();
+
+        if ($effective instanceof \DateTimeInterface) {
+            $effective = Carbon::instance($effective);
+        } else {
+            $effective = Carbon::parse($effective);
+        }
+
+        if ($this->signed_by === null) {
+            $this->signed_by = static::defaultSigner()->id;
+        }
+        if ($this->signed_at === null) {
+            $this->signed_at = $effective;
+        }
+        if ($this->employee_signed_at === null) {
+            $this->employee_signed_at = $effective;
+        }
+
+        return $this;
     }
 }
