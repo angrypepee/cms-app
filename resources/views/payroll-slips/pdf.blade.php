@@ -43,14 +43,14 @@
         color: #6b7280;
         margin-bottom: 6px;
     }
-    .emp-grid { display: flex; flex-wrap: wrap; gap: 4px 0; margin-bottom: 14px; }
-    .emp-field { width: 33.33%; padding: 4px 8px 4px 0; }
+    .emp-grid { width: 100%; border-collapse: collapse; margin-bottom: 14px; }
+    .emp-grid td { width: 33.33%; padding: 4px 8px 4px 0; vertical-align: top; }
     .emp-label { font-size: 8.5px; color: #9ca3af; }
     .emp-value { font-size: 10.5px; font-weight: 600; color: #111827; margin-top: 1px; }
 
     /* Two-column items */
-    .items-wrap { display: flex; gap: 16px; margin-bottom: 12px; }
-    .items-col { flex: 1; }
+    .items-wrap { width: 100%; border-collapse: separate; border-spacing: 8px 0; margin-bottom: 12px; }
+    .items-wrap > tbody > tr > td { width: 50%; vertical-align: top; }
     .col-title { font-size: 8.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1.5px solid; }
     .col-title.income { color: #15803d; border-color: #86efac; }
     .col-title.deduction { color: #b91c1c; border-color: #fca5a5; }
@@ -68,18 +68,18 @@
         color: #fff;
         border-radius: 6px;
         padding: 12px 16px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
         margin-bottom: 16px;
+        width: 100%;
     }
+    .thp-box td { vertical-align: middle; color: #fff; }
+    .thp-box td.right { text-align: right; }
     .thp-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; opacity: .8; }
     .thp-period { font-size: 8px; opacity: .55; margin-top: 2px; }
     .thp-amount { font-size: 20px; font-weight: 800; }
 
     /* Signature */
-    .sig-section { display: flex; justify-content: flex-end; margin-top: 18px; }
-    .sig-box { text-align: center; }
+    .sig-section { width: 100%; margin-top: 18px; border-collapse: collapse; }
+    .sig-section td { width: 50%; vertical-align: top; text-align: center; padding: 0 6px; }
     .sig-box .sig-label { font-size: 9.5px; color: #374151; }
     .sig-box .sig-space { width: 120px; height: 52px; border-bottom: 1px solid #9ca3af; margin: 10px auto 4px; }
     .sig-box .sig-name { font-size: 9.5px; font-weight: 600; color: #111827; }
@@ -134,109 +134,101 @@
 
     {{-- Employee Info --}}
     <div class="section-title">Informasi Karyawan</div>
-    <div class="emp-grid">
-        <div class="emp-field">
-            <div class="emp-label">Nama Lengkap</div>
-            <div class="emp-value">{{ $payrollSlip->employee->name }}</div>
-        </div>
-        <div class="emp-field">
-            <div class="emp-label">ID Karyawan</div>
-            <div class="emp-value" style="font-family:monospace">{{ $payrollSlip->employee->employee_id }}</div>
-        </div>
-        <div class="emp-field">
-            <div class="emp-label">Jabatan</div>
-            <div class="emp-value">{{ $payrollSlip->employee->position ?? '-' }}</div>
-        </div>
-        <div class="emp-field">
-            <div class="emp-label">Departemen</div>
-            <div class="emp-value">{{ $payrollSlip->employee->department ?? '-' }}</div>
-        </div>
-        <div class="emp-field">
-            <div class="emp-label">Kategori</div>
-            <div class="emp-value">{{ $payrollSlip->employee->employee_category?->label() ?? '-' }}</div>
-        </div>
-        <div class="emp-field">
-            <div class="emp-label">Golongan</div>
-            <div class="emp-value">{{ $payrollSlip->employee->grade ?? '-' }}</div>
-        </div>
-        <div class="emp-field">
-            <div class="emp-label">Tanggal Pembayaran</div>
-            <div class="emp-value">{{ $payrollSlip->payment_date ? $payrollSlip->payment_date->format('d/m/Y') : '-' }}</div>
-        </div>
-        @if($payrollSlip->cutoff_start && $payrollSlip->cutoff_end)
-        <div class="emp-field">
-            <div class="emp-label">Periode Cutoff</div>
-            <div class="emp-value">{{ $payrollSlip->cutoff_start->format('d/m/Y') }} – {{ $payrollSlip->cutoff_end->format('d/m/Y') }}</div>
-        </div>
-        @endif
-        @if($payrollSlip->employee->bank_name || $payrollSlip->employee->bank_account)
-        <div class="emp-field">
-            <div class="emp-label">Rekening Bank</div>
-            <div class="emp-value">{{ trim($payrollSlip->employee->bank_name . ' ' . $payrollSlip->employee->bank_account) }}</div>
-        </div>
-        @endif
-        @if($payrollSlip->employee->npwp)
-        <div class="emp-field">
-            <div class="emp-label">NPWP</div>
-            <div class="emp-value" style="font-family:monospace">{{ $payrollSlip->employee->npwp }}</div>
-        </div>
-        @endif
-    </div>
+    @php
+        $empFields = [
+            ['Nama Lengkap',       $payrollSlip->employee->name],
+            ['ID Karyawan',        $payrollSlip->employee->employee_id, true],
+            ['Jabatan',            $payrollSlip->employee->position ?? '-'],
+            ['Departemen',         $payrollSlip->employee->department ?? '-'],
+            ['Kategori',           $payrollSlip->employee->employee_category?->label() ?? '-'],
+            ['Golongan',           $payrollSlip->employee->grade ?? '-'],
+            ['Tanggal Pembayaran', $payrollSlip->payment_date ? $payrollSlip->payment_date->format('d/m/Y') : '-'],
+        ];
+        if ($payrollSlip->cutoff_start && $payrollSlip->cutoff_end) {
+            $empFields[] = ['Periode Cutoff', $payrollSlip->cutoff_start->format('d/m/Y') . ' – ' . $payrollSlip->cutoff_end->format('d/m/Y')];
+        }
+        if ($payrollSlip->employee->bank_name || $payrollSlip->employee->bank_account) {
+            $empFields[] = ['Rekening Bank', trim(($payrollSlip->employee->bank_name ?? '') . ' ' . ($payrollSlip->employee->bank_account ?? ''))];
+        }
+        if ($payrollSlip->employee->npwp) {
+            $empFields[] = ['NPWP', $payrollSlip->employee->npwp, true];
+        }
+        $empRows = array_chunk($empFields, 3);
+    @endphp
+    <table class="emp-grid">
+        @foreach($empRows as $row)
+        <tr>
+            @foreach($row as $field)
+            <td>
+                <div class="emp-label">{{ $field[0] }}</div>
+                <div class="emp-value" @if(!empty($field[2])) style="font-family:monospace" @endif>{{ $field[1] }}</div>
+            </td>
+            @endforeach
+            @for($i = count($row); $i < 3; $i++)<td></td>@endfor
+        </tr>
+        @endforeach
+    </table>
 
     <hr class="divider">
 
     {{-- Items --}}
-    <div class="items-wrap">
-        <div class="items-col">
-            <div class="col-title income">Pendapatan</div>
-            <table class="items-table">
-                <tbody>
-                    @foreach($payrollSlip->incomes as $item)
-                    <tr>
-                        <td>{{ $item->label }}</td>
-                        <td>Rp {{ number_format($item->amount, 0, ',', '.') }}</td>
-                    </tr>
-                    @endforeach
-                </tbody>
-                <tfoot>
-                    <tr>
-                        <td class="total-income">Total Pendapatan</td>
-                        <td class="total-income">Rp {{ number_format($payrollSlip->total_income, 0, ',', '.') }}</td>
-                    </tr>
-                </tfoot>
-            </table>
-        </div>
-        <div class="items-col">
-            <div class="col-title deduction">Potongan</div>
-            <table class="items-table">
-                <tbody>
-                    @forelse($payrollSlip->deductions as $item)
-                    <tr>
-                        <td>{{ $item->label }}</td>
-                        <td>Rp {{ number_format($item->amount, 0, ',', '.') }}</td>
-                    </tr>
-                    @empty
-                    <tr><td colspan="2" style="color:#9ca3af;text-align:center;padding:8px">Tidak ada potongan</td></tr>
-                    @endforelse
-                </tbody>
-                <tfoot>
-                    <tr>
-                        <td class="total-deduction">Total Potongan</td>
-                        <td class="total-deduction">Rp {{ number_format($payrollSlip->total_deduction, 0, ',', '.') }}</td>
-                    </tr>
-                </tfoot>
-            </table>
-        </div>
-    </div>
+    <table class="items-wrap">
+        <tr>
+            <td>
+                <div class="col-title income">Pendapatan</div>
+                <table class="items-table">
+                    <tbody>
+                        @foreach($payrollSlip->incomes as $item)
+                        <tr>
+                            <td>{{ $item->label }}</td>
+                            <td>Rp {{ number_format($item->amount, 0, ',', '.') }}</td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td class="total-income">Total Pendapatan</td>
+                            <td class="total-income">Rp {{ number_format($payrollSlip->total_income, 0, ',', '.') }}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </td>
+            <td>
+                <div class="col-title deduction">Potongan</div>
+                <table class="items-table">
+                    <tbody>
+                        @forelse($payrollSlip->deductions as $item)
+                        <tr>
+                            <td>{{ $item->label }}</td>
+                            <td>Rp {{ number_format($item->amount, 0, ',', '.') }}</td>
+                        </tr>
+                        @empty
+                        <tr><td colspan="2" style="color:#9ca3af;text-align:center;padding:8px">Tidak ada potongan</td></tr>
+                        @endforelse
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td class="total-deduction">Total Potongan</td>
+                            <td class="total-deduction">Rp {{ number_format($payrollSlip->total_deduction, 0, ',', '.') }}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </td>
+        </tr>
+    </table>
 
     {{-- Take Home Pay --}}
-    <div class="thp-box">
-        <div>
-            <div class="thp-label">Take Home Pay</div>
-            <div class="thp-period">Periode: {{ $payrollSlip->period_label }}</div>
-        </div>
-        <div class="thp-amount">Rp {{ number_format($payrollSlip->take_home_pay, 0, ',', '.') }}</div>
-    </div>
+    <table class="thp-box">
+        <tr>
+            <td>
+                <div class="thp-label">Take Home Pay</div>
+                <div class="thp-period">Periode: {{ $payrollSlip->period_label }}</div>
+            </td>
+            <td class="right">
+                <div class="thp-amount">Rp {{ number_format($payrollSlip->take_home_pay, 0, ',', '.') }}</div>
+            </td>
+        </tr>
+    </table>
 
     @if($payrollSlip->notes)
     <div class="notes-box">
@@ -246,26 +238,28 @@
     @endif
 
     {{-- Signature --}}
-    <div class="sig-section" style="justify-content: space-between;">
-        <div class="sig-box">
-            <div class="sig-label">
-                {{ $payrollSlip->employee_signed_at ? $payrollSlip->employee_signed_at->format('d/m/Y') : '..............' }}
-            </div>
-            <div class="sig-space"></div>
-            <div class="sig-name">{{ $payrollSlip->employee->name }}</div>
-            <div class="sig-title">Karyawan</div>
-        </div>
-        <div class="sig-box">
-            <div class="sig-label">
-                {{ $payrollSlip->signed_at
-                    ? $payrollSlip->signed_at->format('d/m/Y')
-                    : ($payrollSlip->payment_date ? $payrollSlip->payment_date->format('d/m/Y') : date('d/m/Y')) }}
-            </div>
-            <div class="sig-space"></div>
-            <div class="sig-name">{{ $payrollSlip->signer->name ?? 'HRD / Management' }}</div>
-            <div class="sig-title">{{ $payrollSlip->signer->title ?? $payrollSlip->company->name }}</div>
-        </div>
-    </div>
+    <table class="sig-section">
+        <tr>
+            <td>
+                <div class="sig-label">
+                    {{ $payrollSlip->employee_signed_at ? $payrollSlip->employee_signed_at->format('d/m/Y') : '..............' }}
+                </div>
+                <div class="sig-space"></div>
+                <div class="sig-name">{{ $payrollSlip->employee->name }}</div>
+                <div class="sig-title">Karyawan</div>
+            </td>
+            <td>
+                <div class="sig-label">
+                    {{ $payrollSlip->signed_at
+                        ? $payrollSlip->signed_at->format('d/m/Y')
+                        : ($payrollSlip->payment_date ? $payrollSlip->payment_date->format('d/m/Y') : date('d/m/Y')) }}
+                </div>
+                <div class="sig-space"></div>
+                <div class="sig-name">{{ $payrollSlip->signer->name ?? 'HRD / Management' }}</div>
+                <div class="sig-title">{{ $payrollSlip->signer->title ?? $payrollSlip->company->name }}</div>
+            </td>
+        </tr>
+    </table>
 
     {{-- Footer --}}
     <div class="doc-footer">
