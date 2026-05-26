@@ -88,11 +88,23 @@ class PayrollSlip extends Model
         return ($months[$this->period_month] ?? $this->period_month) . ' ' . $this->period_year;
     }
 
-    public static function generateSlipNumber(): string
+    /**
+     * Generate a slip number in the format:  SGLIM<YY><MM><####>
+     *   - YY:  2-digit year of the slip period (defaults to current year)
+     *   - MM:  2-digit month of the slip period (defaults to current month)
+     *   - ####: 4-digit sequence, unique per (year, month)
+     */
+    public static function generateSlipNumber(?int $year = null, ?int $month = null): string
     {
-        $prefix = 'SG-' . date('Ymd');
+        $year  = $year  ?? (int) date('Y');
+        $month = $month ?? (int) date('n');
+
+        $prefix = 'SGLIM' . str_pad((string) ($year % 100), 2, '0', STR_PAD_LEFT)
+                          . str_pad((string) $month,       2, '0', STR_PAD_LEFT);
+
         $last = self::where('slip_number', 'like', $prefix . '%')->latest('id')->first();
-        $seq = $last ? ((int) substr($last->slip_number, -4)) + 1 : 1;
-        return $prefix . str_pad($seq, 4, '0', STR_PAD_LEFT);
+        $seq  = $last ? ((int) substr($last->slip_number, -4)) + 1 : 1;
+
+        return $prefix . str_pad((string) $seq, 4, '0', STR_PAD_LEFT);
     }
 }

@@ -313,7 +313,7 @@ class PayrollInfoController extends Controller
 
         return DB::transaction(function () use ($employee, $periodMonth, $periodYear, $paymentDate, $cutoffStart, $cutoffEnd, $agreement, $totals, $transferData) {
             $slip = PayrollSlip::create(array_merge([
-                'slip_number'     => PayrollSlip::generateSlipNumber(),
+                'slip_number'     => PayrollSlip::generateSlipNumber($periodYear, $periodMonth),
                 'company_id'      => $employee->company_id,
                 'employee_id'     => $employee->id,
                 'period_month'    => $periodMonth,

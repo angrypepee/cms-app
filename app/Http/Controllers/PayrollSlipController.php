@@ -138,7 +138,7 @@ class PayrollSlipController extends Controller
                 }
 
                 $slip = PayrollSlip::create([
-                    'slip_number'     => PayrollSlip::generateSlipNumber(),
+                    'slip_number'     => PayrollSlip::generateSlipNumber($validated['period_year'], $validated['period_month']),
                     'company_id'      => $validated['company_id'],
                     'employee_id'     => $employee->id,
                     'period_month'    => $validated['period_month'],
@@ -210,7 +210,7 @@ class PayrollSlipController extends Controller
             }
 
             $slip = PayrollSlip::create([
-                'slip_number'     => PayrollSlip::generateSlipNumber(),
+                'slip_number'     => PayrollSlip::generateSlipNumber($validated['period_year'], $validated['period_month']),
                 'company_id'      => $validated['company_id'],
                 'employee_id'     => $validated['employee_id'],
                 'period_month'    => $validated['period_month'],
