@@ -58,7 +58,7 @@
         @if(!$slips->isEmpty())
         <div class="ms-auto d-flex align-items-center gap-2">
             <span id="selCount" class="text-muted small">0 dipilih</span>
-            <button type="submit" form="bulkDownloadForm" id="bulkDownloadBtn" class="btn btn-sm btn-primary">
+            <button type="button" id="bulkDownloadBtn" class="btn btn-sm btn-primary">
                 <i class="bi bi-file-earmark-pdf me-1"></i>Download Terpilih (PDF)
             </button>
         </div>
@@ -117,12 +117,15 @@
 @push('scripts')
 <script>
 (function () {
-    const form   = document.getElementById('bulkDownloadForm');
     const btn    = document.getElementById('bulkDownloadBtn');
     const count  = document.getElementById('selCount');
     const all    = document.getElementById('checkAllSlips');
     const checks = document.querySelectorAll('.slip-check');
-    if (!form || !btn) return;
+    if (!btn) return;
+
+    const url   = @json(route('payroll-slips.bulk-download'));
+    const token = document.querySelector('meta[name="csrf-token"]')?.content
+               || document.querySelector('input[name="_token"]')?.value;
 
     function refresh() {
         const n = document.querySelectorAll('.slip-check:checked').length;
@@ -135,25 +138,58 @@
         refresh();
     });
 
-    // Belt-and-suspenders: also build the POST body manually on submit
-    // in case the browser doesn't pick up checkboxes via the `form` attribute.
-    form.addEventListener('submit', function (e) {
-        const checked = document.querySelectorAll('.slip-check:checked');
+    btn.addEventListener('click', async function () {
+        const checked = [...document.querySelectorAll('.slip-check:checked')];
         if (checked.length === 0) {
-            e.preventDefault();
             alert('Pilih minimal satu slip gaji terlebih dahulu.');
             return;
         }
-        // Remove any previously-injected hidden inputs, then add fresh ones.
-        form.querySelectorAll('input[name="slip_ids[]"][data-injected]').forEach(el => el.remove());
-        checked.forEach(cb => {
-            const h = document.createElement('input');
-            h.type = 'hidden';
-            h.name = 'slip_ids[]';
-            h.value = cb.value;
-            h.setAttribute('data-injected', '1');
-            form.appendChild(h);
-        });
+        if (!token) {
+            alert('CSRF token tidak ditemukan. Refresh halaman lalu coba lagi.');
+            return;
+        }
+        const fd = new FormData();
+        fd.append('_token', token);
+        checked.forEach(cb => fd.append('slip_ids[]', cb.value));
+
+        const original = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Menyiapkan PDF...';
+
+        try {
+            const res = await fetch(url, {
+                method: 'POST',
+                body: fd,
+                credentials: 'same-origin',
+                headers: { 'Accept': 'application/pdf,application/octet-stream,*/*' },
+            });
+            if (!res.ok) {
+                let msg = 'HTTP ' + res.status;
+                try { msg += ' — ' + (await res.text()).slice(0, 200); } catch (_) {}
+                throw new Error(msg);
+            }
+            const blob = await res.blob();
+            // Try to read filename from Content-Disposition
+            let filename = 'SlipGaji-Bundle-' + new Date().toISOString().slice(0,10) + '.pdf';
+            const cd = res.headers.get('Content-Disposition') || '';
+            const m = cd.match(/filename="?([^"]+)"?/i);
+            if (m) filename = m[1];
+
+            const blobUrl = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = blobUrl;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+        } catch (err) {
+            console.error('Bulk download failed', err);
+            alert('Gagal mengunduh PDF: ' + err.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = original;
+        }
     });
     refresh();
 })();

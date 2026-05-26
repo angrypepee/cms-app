@@ -366,6 +366,12 @@ class PayrollSlipController extends Controller
      */
     public function bulkDownload(Request $request)
     {
+        \Log::info('bulkDownload hit', [
+            'ids'   => $request->input('slip_ids', []),
+            'user'  => optional($request->user())->id,
+            'ajax'  => $request->ajax() || $request->wantsJson(),
+        ]);
+
         $validated = $request->validate([
             'slip_ids'   => 'required|array|min:1',
             'slip_ids.*' => 'integer|exists:payroll_slips,id',
