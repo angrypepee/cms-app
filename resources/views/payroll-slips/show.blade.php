@@ -513,8 +513,10 @@
             Slip gaji ini sah sebagai bukti pembayaran dan tidak memerlukan tanda tangan basah.
         </div>
         <div class="slip-footer-id">
+            <span>Diterbitkan</span>
             <i class="bi bi-shield-check me-1"></i>{{ $payrollSlip->slip_number }}
-            &nbsp;·&nbsp; {{ now()->format('d M Y') }}
+            &nbsp;·&nbsp;
+            {{ ($payrollSlip->released_at ?? $payrollSlip->created_at)->format('d M Y') }}
         </div>
     </div>
     {{-- /FOOTER --}}
