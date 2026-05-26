@@ -2,7 +2,8 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
     @page { margin: 14mm 12mm; }
     body {
-        font-family: DejaVu Sans, Helvetica, Arial, sans-serif;
+        /* Match on-screen UI: prefer Helvetica (built into dompdf) over DejaVu — closer to system-ui/Segoe UI/Roboto used in app.blade.php */
+        font-family: Helvetica, Arial, sans-serif;
         font-size: 10.5px;
         color: #0f172a;
         background: #fff;
