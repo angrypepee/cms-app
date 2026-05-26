@@ -350,7 +350,10 @@ class PayrollSlipController extends Controller
 
     public function downloadPdf(PayrollSlip $payrollSlip)
     {
-        $payrollSlip->load(['company', 'employee', 'incomes', 'deductions']);
+        @set_time_limit(0);
+        @ini_set('memory_limit', '512M');
+
+        $payrollSlip->load(['company', 'employee', 'incomes', 'deductions', 'signer']);
         $pdf = Pdf::loadView('payroll-slips.pdf', compact('payrollSlip'))
             ->setPaper('a4', 'portrait');
 
@@ -368,7 +371,11 @@ class PayrollSlipController extends Controller
             'slip_ids.*' => 'integer|exists:payroll_slips,id',
         ]);
 
-        $slips = PayrollSlip::with(['company', 'employee', 'incomes', 'deductions'])
+        // Generating many PDFs can be slow / memory-heavy. Be generous.
+        @set_time_limit(0);
+        @ini_set('memory_limit', '512M');
+
+        $slips = PayrollSlip::with(['company', 'employee', 'incomes', 'deductions', 'signer'])
             ->whereIn('id', $validated['slip_ids'])
             ->orderBy('company_id')
             ->orderBy('employee_id')
@@ -383,38 +390,57 @@ class PayrollSlipController extends Controller
             return $this->downloadPdf($slips->first());
         }
 
-        // Build a ZIP in a temp file
+        // Build a ZIP in a temp file with an explicit .zip extension
+        // (some clients/middleware mis-handle extensionless temp files).
         $zipName = 'SlipGaji-Bundle-' . date('Ymd-His') . '.zip';
-        $tmpPath = tempnam(sys_get_temp_dir(), 'slipzip_');
+        $tmpBase = tempnam(sys_get_temp_dir(), 'slipzip_');
+        $tmpPath = $tmpBase . '.zip';
+        @rename($tmpBase, $tmpPath);
 
         $zip = new \ZipArchive();
         if ($zip->open($tmpPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
             return redirect()->back()->with('error', 'Gagal membuat arsip ZIP.');
         }
 
-        $used = [];
+        $used   = [];
+        $errors = [];
         foreach ($slips as $slip) {
-            $pdf = Pdf::loadView('payroll-slips.pdf', ['payrollSlip' => $slip])
-                ->setPaper('a4', 'portrait');
+            try {
+                $pdf = Pdf::loadView('payroll-slips.pdf', ['payrollSlip' => $slip])
+                    ->setPaper('a4', 'portrait');
 
-            // Folder per company, file per employee+period for clarity
-            $companyFolder = $this->safeFilename($slip->company->name ?: 'Perusahaan');
-            $base = 'SlipGaji-' . $slip->slip_number . '-' . $this->safeFilename($slip->employee->name);
-            $name = $companyFolder . '/' . $base . '.pdf';
+                $companyFolder = $this->safeFilename($slip->company->name ?: 'Perusahaan');
+                $base = 'SlipGaji-' . $slip->slip_number . '-' . $this->safeFilename($slip->employee->name);
+                $name = $companyFolder . '/' . $base . '.pdf';
 
-            // Avoid collisions
-            $i = 1;
-            while (isset($used[$name])) {
-                $name = $companyFolder . '/' . $base . '-' . (++$i) . '.pdf';
+                $i = 1;
+                while (isset($used[$name])) {
+                    $name = $companyFolder . '/' . $base . '-' . (++$i) . '.pdf';
+                }
+                $used[$name] = true;
+
+                $zip->addFromString($name, $pdf->output());
+                unset($pdf);
+            } catch (\Throwable $e) {
+                $errors[] = $slip->slip_number . ': ' . $e->getMessage();
+                \Log::warning('bulkDownload PDF failed', [
+                    'slip' => $slip->slip_number,
+                    'error' => $e->getMessage(),
+                ]);
             }
-            $used[$name] = true;
-
-            $zip->addFromString($name, $pdf->output());
         }
         $zip->close();
 
+        if (empty($used)) {
+            @unlink($tmpPath);
+            return redirect()->back()->with('error', 'Semua slip gagal dirender: ' . implode(' | ', $errors));
+        }
+
         return response()
-            ->download($tmpPath, $zipName, ['Content-Type' => 'application/zip'])
+            ->download($tmpPath, $zipName, [
+                'Content-Type'        => 'application/zip',
+                'Content-Disposition' => 'attachment; filename="' . $zipName . '"',
+            ])
             ->deleteFileAfterSend(true);
     }
 
