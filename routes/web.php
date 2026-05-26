@@ -137,6 +137,7 @@ Route::middleware('auth')->group(function () {
 
         Route::get('payroll-slips/bulk-create',   [PayrollSlipController::class, 'bulkCreate'])->name('payroll-slips.bulk-create');
         Route::post('payroll-slips/bulk-store',   [PayrollSlipController::class, 'bulkStore'])->name('payroll-slips.bulk-store');
+        Route::post('payroll-slips/bulk-download',[PayrollSlipController::class, 'bulkDownload'])->name('payroll-slips.bulk-download');
         Route::resource('payroll-slips', PayrollSlipController::class);
         Route::get('payroll-slips/{payrollSlip}/pdf',     [PayrollSlipController::class, 'downloadPdf'])->name('payroll-slips.pdf');
         Route::patch('payroll-slips/{payrollSlip}/publish',[PayrollSlipController::class, 'publish'])->name('payroll-slips.publish');

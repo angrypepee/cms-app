@@ -354,6 +354,73 @@ class PayrollSlipController extends Controller
         return $pdf->download($filename);
     }
 
+    /**
+     * Download multiple slips as a single ZIP file containing one PDF per slip.
+     */
+    public function bulkDownload(Request $request)
+    {
+        $validated = $request->validate([
+            'slip_ids'   => 'required|array|min:1',
+            'slip_ids.*' => 'integer|exists:payroll_slips,id',
+        ]);
+
+        $slips = PayrollSlip::with(['company', 'employee', 'incomes', 'deductions'])
+            ->whereIn('id', $validated['slip_ids'])
+            ->orderBy('company_id')
+            ->orderBy('employee_id')
+            ->get();
+
+        if ($slips->isEmpty()) {
+            return redirect()->back()->with('warning', 'Tidak ada slip terpilih untuk diunduh.');
+        }
+
+        // Single slip → just stream the PDF directly
+        if ($slips->count() === 1) {
+            return $this->downloadPdf($slips->first());
+        }
+
+        // Build a ZIP in a temp file
+        $zipName = 'SlipGaji-Bundle-' . date('Ymd-His') . '.zip';
+        $tmpPath = tempnam(sys_get_temp_dir(), 'slipzip_');
+
+        $zip = new \ZipArchive();
+        if ($zip->open($tmpPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
+            return redirect()->back()->with('error', 'Gagal membuat arsip ZIP.');
+        }
+
+        $used = [];
+        foreach ($slips as $slip) {
+            $pdf = Pdf::loadView('payroll-slips.pdf', ['payrollSlip' => $slip])
+                ->setPaper('a4', 'portrait');
+
+            // Folder per company, file per employee+period for clarity
+            $companyFolder = $this->safeFilename($slip->company->name ?: 'Perusahaan');
+            $base = 'SlipGaji-' . $slip->slip_number . '-' . $this->safeFilename($slip->employee->name);
+            $name = $companyFolder . '/' . $base . '.pdf';
+
+            // Avoid collisions
+            $i = 1;
+            while (isset($used[$name])) {
+                $name = $companyFolder . '/' . $base . '-' . (++$i) . '.pdf';
+            }
+            $used[$name] = true;
+
+            $zip->addFromString($name, $pdf->output());
+        }
+        $zip->close();
+
+        return response()
+            ->download($tmpPath, $zipName, ['Content-Type' => 'application/zip'])
+            ->deleteFileAfterSend(true);
+    }
+
+    private function safeFilename(string $name): string
+    {
+        $name = preg_replace('/[^A-Za-z0-9 _\-]/', '', $name);
+        $name = preg_replace('/\s+/', '_', trim($name));
+        return $name !== '' ? $name : 'file';
+    }
+
     public function publish(PayrollSlip $payrollSlip)
     {
         $payrollSlip->update(['status' => 'published']);

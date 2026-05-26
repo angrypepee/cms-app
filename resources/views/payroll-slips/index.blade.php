@@ -52,19 +52,30 @@
 </div>
 {{-- Table --}}
 <div class="card">
-    <div class="card-header">
+    <div class="card-header d-flex align-items-center">
         <span class="card-title"><i class="bi bi-receipt-cutoff me-2 text-primary"></i>Daftar Slip Gaji</span>
-        <span class="badge bg-secondary">{{ $slips->total() }}</span>
+        <span class="badge bg-secondary ms-2">{{ $slips->total() }}</span>
+        @if(!$slips->isEmpty())
+        <div class="ms-auto d-flex align-items-center gap-2">
+            <span id="selCount" class="text-muted small">0 dipilih</span>
+            <button type="submit" form="bulkDownloadForm" id="bulkDownloadBtn" class="btn btn-sm btn-primary" disabled>
+                <i class="bi bi-file-earmark-zip me-1"></i>Download Terpilih (ZIP)
+            </button>
+        </div>
+        @endif
     </div>
     @if($slips->isEmpty())
         <div class="card-body text-center py-5 text-muted">
             <i class="bi bi-receipt-cutoff fs-1 d-block mb-2 opacity-25"></i>Tidak ada slip gaji ditemukan.
         </div>
     @else
+        {{-- Empty form outside the table; checkboxes/buttons reference it via form="bulkDownloadForm" --}}
+        <form method="POST" action="{{ route('payroll-slips.bulk-download') }}" id="bulkDownloadForm">@csrf</form>
         <div class="table-responsive">
             <table class="table table-hover mb-0">
                 <thead>
                     <tr>
+                        <th style="width:40px"><input type="checkbox" class="form-check-input" id="checkAllSlips"></th>
                         <th>No. Slip</th>
                         <th>Karyawan</th>
                         <th>Perusahaan</th>
@@ -77,6 +88,7 @@
                 <tbody>
                     @foreach($slips as $slip)
                     <tr>
+                        <td><input type="checkbox" form="bulkDownloadForm" name="slip_ids[]" value="{{ $slip->id }}" class="form-check-input slip-check"></td>
                         <td><span class="font-monospace text-muted" style="font-size:.78rem">{{ $slip->slip_number }}</span></td>
                         <td class="fw-medium">{{ $slip->employee->name }}</td>
                         <td class="text-muted" style="font-size:.85rem">{{ $slip->company->name }}</td>
@@ -101,4 +113,34 @@
         <div class="card-footer bg-transparent">{{ $slips->withQueryString()->links() }}</div>
     @endif
 </div>
+
+@push('scripts')
+<script>
+(function () {
+    const checks = document.querySelectorAll('.slip-check');
+    const all    = document.getElementById('checkAllSlips');
+    const btn    = document.getElementById('bulkDownloadBtn');
+    const count  = document.getElementById('selCount');
+    if (!checks.length || !btn) return;
+
+    function refresh() {
+        const n = document.querySelectorAll('.slip-check:checked').length;
+        btn.disabled = n === 0;
+        count.textContent = n + ' dipilih';
+        if (all) all.checked = n > 0 && n === checks.length;
+    }
+    checks.forEach(cb => cb.addEventListener('change', refresh));
+    if (all) all.addEventListener('change', e => {
+        checks.forEach(cb => cb.checked = e.target.checked);
+        refresh();
+    });
+    document.getElementById('bulkDownloadForm').addEventListener('submit', e => {
+        if (document.querySelectorAll('.slip-check:checked').length === 0) {
+            e.preventDefault();
+        }
+    });
+    refresh();
+})();
+</script>
+@endpush
 @endsection
