@@ -59,7 +59,7 @@
         <div class="ms-auto d-flex align-items-center gap-2">
             <span id="selCount" class="text-muted small">0 dipilih</span>
             <button type="submit" form="bulkDownloadForm" id="bulkDownloadBtn" class="btn btn-sm btn-primary">
-                <i class="bi bi-file-earmark-zip me-1"></i>Download Terpilih (ZIP)
+                <i class="bi bi-file-earmark-pdf me-1"></i>Download Terpilih (PDF)
             </button>
         </div>
         @endif

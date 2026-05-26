@@ -362,7 +362,7 @@ class PayrollSlipController extends Controller
     }
 
     /**
-     * Download multiple slips as a single ZIP file containing one PDF per slip.
+     * Download multiple slips as a single PDF file (one slip per page).
      */
     public function bulkDownload(Request $request)
     {
@@ -390,58 +390,19 @@ class PayrollSlipController extends Controller
             return $this->downloadPdf($slips->first());
         }
 
-        // Build a ZIP in a temp file with an explicit .zip extension
-        // (some clients/middleware mis-handle extensionless temp files).
-        $zipName = 'SlipGaji-Bundle-' . date('Ymd-His') . '.zip';
-        $tmpBase = tempnam(sys_get_temp_dir(), 'slipzip_');
-        $tmpPath = $tmpBase . '.zip';
-        @rename($tmpBase, $tmpPath);
+        try {
+            $pdf = Pdf::loadView('payroll-slips.pdf-bundle', [
+                    'slips' => $slips,
+                    'title' => 'Slip Gaji - Bundle (' . $slips->count() . ')',
+                ])
+                ->setPaper('a4', 'portrait');
 
-        $zip = new \ZipArchive();
-        if ($zip->open($tmpPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
-            return redirect()->back()->with('error', 'Gagal membuat arsip ZIP.');
+            $filename = 'SlipGaji-Bundle-' . date('Ymd-His') . '.pdf';
+            return $pdf->download($filename);
+        } catch (\Throwable $e) {
+            \Log::error('bulkDownload PDF failed', ['error' => $e->getMessage()]);
+            return redirect()->back()->with('error', 'Gagal membuat PDF gabungan: ' . $e->getMessage());
         }
-
-        $used   = [];
-        $errors = [];
-        foreach ($slips as $slip) {
-            try {
-                $pdf = Pdf::loadView('payroll-slips.pdf', ['payrollSlip' => $slip])
-                    ->setPaper('a4', 'portrait');
-
-                $companyFolder = $this->safeFilename($slip->company->name ?: 'Perusahaan');
-                $base = 'SlipGaji-' . $slip->slip_number . '-' . $this->safeFilename($slip->employee->name);
-                $name = $companyFolder . '/' . $base . '.pdf';
-
-                $i = 1;
-                while (isset($used[$name])) {
-                    $name = $companyFolder . '/' . $base . '-' . (++$i) . '.pdf';
-                }
-                $used[$name] = true;
-
-                $zip->addFromString($name, $pdf->output());
-                unset($pdf);
-            } catch (\Throwable $e) {
-                $errors[] = $slip->slip_number . ': ' . $e->getMessage();
-                \Log::warning('bulkDownload PDF failed', [
-                    'slip' => $slip->slip_number,
-                    'error' => $e->getMessage(),
-                ]);
-            }
-        }
-        $zip->close();
-
-        if (empty($used)) {
-            @unlink($tmpPath);
-            return redirect()->back()->with('error', 'Semua slip gagal dirender: ' . implode(' | ', $errors));
-        }
-
-        return response()
-            ->download($tmpPath, $zipName, [
-                'Content-Type'        => 'application/zip',
-                'Content-Disposition' => 'attachment; filename="' . $zipName . '"',
-            ])
-            ->deleteFileAfterSend(true);
     }
 
     private function safeFilename(string $name): string
