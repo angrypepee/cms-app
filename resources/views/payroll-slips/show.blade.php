@@ -218,16 +218,16 @@
 
     {{-- ── HEADER ── --}}
     <div class="slip-header">
-        <div class="d-flex align-items-start justify-content-between gap-4 flex-wrap" style="position:relative;z-index:1">
+        <div class="d-flex align-items-start justify-content-between gap-4" style="position:relative;z-index:1;flex-wrap:nowrap">
 
             {{-- Left: Company --}}
-            <div class="d-flex align-items-center gap-3">
+            <div class="d-flex align-items-center gap-3" style="flex:1 1 auto;min-width:0">
                 @if($payrollSlip->company->logo)
-                    <img src="{{ asset('storage/'.$payrollSlip->company->logo) }}" class="company-logo" alt="{{ $payrollSlip->company->name }}">
+                    <img src="{{ asset('storage/'.$payrollSlip->company->logo) }}" class="company-logo flex-shrink-0" alt="{{ $payrollSlip->company->name }}">
                 @else
-                    <div class="logo-placeholder"><i class="bi bi-building-fill"></i></div>
+                    <div class="logo-placeholder flex-shrink-0"><i class="bi bi-building-fill"></i></div>
                 @endif
-                <div>
+                <div style="min-width:0;overflow-wrap:anywhere;word-break:break-word">
                     <div class="slip-company-name">{{ $payrollSlip->company->name }}</div>
                     <div class="slip-company-meta">
                         @if($payrollSlip->company->tagline){{ $payrollSlip->company->tagline }}<br>@endif
@@ -240,7 +240,7 @@
             </div>
 
             {{-- Right: Slip Info --}}
-            <div class="text-end">
+            <div class="text-end" style="flex:0 0 auto;min-width:170px;max-width:230px">
                 <div class="slip-label">Slip Gaji Karyawan</div>
                 <div class="slip-title">{{ $payrollSlip->period_label }}</div>
                 <div class="slip-num">{{ $payrollSlip->slip_number }}</div>
