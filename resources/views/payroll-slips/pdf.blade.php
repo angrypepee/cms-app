@@ -22,12 +22,14 @@
     }
 
     /* Header */
-    .header { display: flex; align-items: flex-start; justify-content: space-between; padding-bottom: 12px; border-bottom: 2px solid #1d4ed8; margin-bottom: 12px; }
-    .header-left { display: flex; align-items: center; gap: 12px; }
-    .company-logo { width: 56px; height: 56px; object-fit: contain; border-radius: 4px; }
-    .company-name { font-size: 16px; font-weight: 700; color: #111827; line-height: 1.2; }
-    .company-sub { font-size: 9.5px; color: #6b7280; margin-top: 2px; }
-    .header-right { text-align: right; }
+    .header { width: 100%; border-bottom: 2px solid #1d4ed8; padding-bottom: 10px; margin-bottom: 14px; }
+    .header table { width: 100%; border-collapse: collapse; }
+    .header td { vertical-align: top; padding: 0; }
+    .header td.right { text-align: right; width: 38%; }
+    .company-logo { width: 52px; height: 52px; object-fit: contain; vertical-align: top; }
+    .company-block { padding-left: 10px; vertical-align: top; }
+    .company-name { font-size: 15px; font-weight: 700; color: #111827; line-height: 1.25; }
+    .company-sub { font-size: 9px; color: #6b7280; margin-top: 2px; line-height: 1.4; }
     .slip-title { font-size: 13px; font-weight: 700; color: #1d4ed8; letter-spacing: 0.05em; text-transform: uppercase; }
     .slip-period { font-size: 12px; font-weight: 600; color: #374151; margin-top: 2px; }
     .slip-number { font-size: 9px; color: #9ca3af; font-family: monospace; margin-top: 2px; }
@@ -96,28 +98,38 @@
 
     {{-- Header --}}
     <div class="header">
-        <div class="header-left">
-            @if($payrollSlip->company->logo)
-                <img src="{{ storage_path('app/public/' . $payrollSlip->company->logo) }}" class="company-logo" alt="Logo">
-            @endif
-            <div>
-                <div class="company-name">{{ $payrollSlip->company->name }}</div>
-                @if($payrollSlip->company->tagline)
-                    <div class="company-sub">{{ $payrollSlip->company->tagline }}</div>
-                @endif
-                @if($payrollSlip->company->address)
-                    <div class="company-sub" style="margin-top:3px">{{ $payrollSlip->company->address }}</div>
-                @endif
-                @if($payrollSlip->company->phone || $payrollSlip->company->email)
-                    <div class="company-sub">{{ implode(' | ', array_filter([$payrollSlip->company->phone, $payrollSlip->company->email])) }}</div>
-                @endif
-            </div>
-        </div>
-        <div class="header-right">
-            <div class="slip-title">Slip Gaji</div>
-            <div class="slip-period">{{ $payrollSlip->period_label }}</div>
-            <div class="slip-number">{{ $payrollSlip->slip_number }}</div>
-        </div>
+        <table>
+            <tr>
+                <td>
+                    <table>
+                        <tr>
+                            @if($payrollSlip->company->logo)
+                            <td style="width:62px">
+                                <img src="{{ storage_path('app/public/' . $payrollSlip->company->logo) }}" class="company-logo" alt="Logo">
+                            </td>
+                            @endif
+                            <td class="company-block">
+                                <div class="company-name">{{ $payrollSlip->company->name }}</div>
+                                @if($payrollSlip->company->tagline)
+                                    <div class="company-sub">{{ $payrollSlip->company->tagline }}</div>
+                                @endif
+                                @if($payrollSlip->company->address)
+                                    <div class="company-sub">{{ $payrollSlip->company->address }}</div>
+                                @endif
+                                @if($payrollSlip->company->phone || $payrollSlip->company->email)
+                                    <div class="company-sub">{{ implode(' | ', array_filter([$payrollSlip->company->phone, $payrollSlip->company->email])) }}</div>
+                                @endif
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+                <td class="right">
+                    <div class="slip-title">Slip Gaji</div>
+                    <div class="slip-period">{{ $payrollSlip->period_label }}</div>
+                    <div class="slip-number">{{ $payrollSlip->slip_number }}</div>
+                </td>
+            </tr>
+        </table>
     </div>
 
     {{-- Employee Info --}}
