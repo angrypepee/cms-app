@@ -135,6 +135,8 @@ Route::middleware('auth')->group(function () {
         Route::get('employees/{employee}/documents/{document}',    [EmployeeDocumentController::class, 'show'])->name('employee-documents.show');
         Route::delete('employees/{employee}/documents/{document}', [EmployeeDocumentController::class, 'destroy'])->name('employee-documents.destroy');
 
+        Route::get('payroll-slips/bulk-create',   [PayrollSlipController::class, 'bulkCreate'])->name('payroll-slips.bulk-create');
+        Route::post('payroll-slips/bulk-store',   [PayrollSlipController::class, 'bulkStore'])->name('payroll-slips.bulk-store');
         Route::resource('payroll-slips', PayrollSlipController::class);
         Route::get('payroll-slips/{payrollSlip}/pdf',     [PayrollSlipController::class, 'downloadPdf'])->name('payroll-slips.pdf');
         Route::patch('payroll-slips/{payrollSlip}/publish',[PayrollSlipController::class, 'publish'])->name('payroll-slips.publish');

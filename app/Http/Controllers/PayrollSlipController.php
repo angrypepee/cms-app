@@ -47,6 +47,139 @@ class PayrollSlipController extends Controller
         return view('payroll-slips.create', compact('companies'));
     }
 
+    /**
+     * Show form to generate slips for many employees at once based on a month/year.
+     */
+    public function bulkCreate(Request $request)
+    {
+        $companies = Company::orderBy('name')->get();
+
+        $companyId = $request->integer('company_id') ?: optional($companies->first())->id;
+        $month     = $request->integer('month') ?: (int) now()->format('n');
+        $year      = $request->integer('year')  ?: (int) now()->format('Y');
+
+        $employees = collect();
+        $existingEmployeeIds = collect();
+
+        if ($companyId) {
+            $employees = Employee::where('company_id', $companyId)
+                ->where('is_active', true)
+                ->orderBy('name')
+                ->get();
+
+            $existingEmployeeIds = PayrollSlip::where('company_id', $companyId)
+                ->where('period_month', $month)
+                ->where('period_year', $year)
+                ->pluck('employee_id');
+        }
+
+        return view('payroll-slips.bulk-create', compact(
+            'companies', 'employees', 'companyId', 'month', 'year', 'existingEmployeeIds'
+        ));
+    }
+
+    /**
+     * Persist multiple slips at once. Slips use each employee's salary agreement
+     * (base_salary + salary_components). Employees already having a slip for the
+     * same company/month/year are skipped.
+     */
+    public function bulkStore(Request $request)
+    {
+        $validated = $request->validate([
+            'company_id'   => 'required|exists:companies,id',
+            'period_month' => 'required|integer|between:1,12',
+            'period_year'  => 'required|integer|min:2000|max:2099',
+            'payment_date' => 'nullable|date',
+            'released_at'  => 'nullable|date',
+            'cutoff_start' => 'nullable|date',
+            'cutoff_end'   => 'nullable|date|after_or_equal:cutoff_start',
+            'employee_ids'   => 'required|array|min:1',
+            'employee_ids.*' => 'integer|exists:employees,id',
+            'action'         => 'nullable|in:draft,publish',
+        ]);
+
+        $status = ($validated['action'] ?? 'draft') === 'publish' ? 'published' : 'draft';
+
+        $created = 0;
+        $skippedExisting = 0;
+        $skippedNoSalary = 0;
+
+        DB::transaction(function () use ($validated, $status, &$created, &$skippedExisting, &$skippedNoSalary) {
+            $employees = Employee::where('company_id', $validated['company_id'])
+                ->whereIn('id', $validated['employee_ids'])
+                ->get();
+
+            foreach ($employees as $employee) {
+                // Skip duplicates for the same period
+                $exists = PayrollSlip::where('company_id', $validated['company_id'])
+                    ->where('employee_id', $employee->id)
+                    ->where('period_month', $validated['period_month'])
+                    ->where('period_year', $validated['period_year'])
+                    ->exists();
+
+                if ($exists) {
+                    $skippedExisting++;
+                    continue;
+                }
+
+                $rows = $employee->salaryAgreement();
+                // Filter out empty base salary rows (no salary configured at all)
+                $usableRows = array_values(array_filter($rows, fn ($r) => (float) $r['amount'] > 0));
+                if (empty($usableRows)) {
+                    $skippedNoSalary++;
+                    continue;
+                }
+
+                $totalIncome    = 0;
+                $totalDeduction = 0;
+                foreach ($usableRows as $r) {
+                    if ($r['type'] === 'income')    $totalIncome    += $r['amount'];
+                    if ($r['type'] === 'deduction') $totalDeduction += $r['amount'];
+                }
+
+                $slip = PayrollSlip::create([
+                    'slip_number'     => PayrollSlip::generateSlipNumber(),
+                    'company_id'      => $validated['company_id'],
+                    'employee_id'     => $employee->id,
+                    'period_month'    => $validated['period_month'],
+                    'period_year'     => $validated['period_year'],
+                    'cutoff_start'    => $validated['cutoff_start'] ?? null,
+                    'cutoff_end'      => $validated['cutoff_end'] ?? null,
+                    'payment_date'    => $validated['payment_date'] ?? null,
+                    'released_at'     => $validated['released_at']  ?? null,
+                    'total_income'    => $totalIncome,
+                    'total_deduction' => $totalDeduction,
+                    'take_home_pay'   => $totalIncome - $totalDeduction,
+                    'status'          => $status,
+                ]);
+
+                foreach ($usableRows as $i => $r) {
+                    PayrollItem::create([
+                        'payroll_slip_id' => $slip->id,
+                        'type'            => $r['type'],
+                        'label'           => $r['label'],
+                        'amount'          => $r['amount'],
+                        'sort_order'      => $i,
+                    ]);
+                }
+
+                $created++;
+            }
+        });
+
+        $msg = "Berhasil membuat {$created} slip gaji.";
+        if ($skippedExisting > 0) $msg .= " {$skippedExisting} dilewati (sudah ada untuk periode ini).";
+        if ($skippedNoSalary > 0) $msg .= " {$skippedNoSalary} dilewati (belum memiliki Gaji Pokok / komponen).";
+
+        return redirect()
+            ->route('payroll-slips.index', [
+                'company_id' => $validated['company_id'],
+                'month'      => $validated['period_month'],
+                'year'       => $validated['period_year'],
+            ])
+            ->with($created > 0 ? 'success' : 'warning', $msg);
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate([

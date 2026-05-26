@@ -45,6 +45,7 @@
                 <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-search me-1"></i>Filter</button>
                 <a href="{{ route('payroll-slips.index') }}" class="btn btn-outline-secondary btn-sm">Reset</a>
                 <a href="{{ route('payroll-slips.create') }}" class="btn btn-success btn-sm ms-auto"><i class="bi bi-plus-lg me-1"></i>Buat Slip</a>
+                <a href="{{ route('payroll-slips.bulk-create') }}" class="btn btn-primary btn-sm"><i class="bi bi-people-fill me-1"></i>Buat Massal</a>
             </div>
         </form>
     </div>
