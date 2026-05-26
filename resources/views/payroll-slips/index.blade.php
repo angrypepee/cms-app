@@ -58,7 +58,7 @@
         @if(!$slips->isEmpty())
         <div class="ms-auto d-flex align-items-center gap-2">
             <span id="selCount" class="text-muted small">0 dipilih</span>
-            <button type="submit" form="bulkDownloadForm" id="bulkDownloadBtn" class="btn btn-sm btn-primary" disabled>
+            <button type="submit" form="bulkDownloadForm" id="bulkDownloadBtn" class="btn btn-sm btn-primary">
                 <i class="bi bi-file-earmark-zip me-1"></i>Download Terpilih (ZIP)
             </button>
         </div>
@@ -69,7 +69,7 @@
             <i class="bi bi-receipt-cutoff fs-1 d-block mb-2 opacity-25"></i>Tidak ada slip gaji ditemukan.
         </div>
     @else
-        {{-- Empty form outside the table; checkboxes/buttons reference it via form="bulkDownloadForm" --}}
+        {{-- Bulk download form. Checkboxes use form="bulkDownloadForm" to associate with this form. --}}
         <form method="POST" action="{{ route('payroll-slips.bulk-download') }}" id="bulkDownloadForm">@csrf</form>
         <div class="table-responsive">
             <table class="table table-hover mb-0">
@@ -117,27 +117,43 @@
 @push('scripts')
 <script>
 (function () {
-    const checks = document.querySelectorAll('.slip-check');
-    const all    = document.getElementById('checkAllSlips');
+    const form   = document.getElementById('bulkDownloadForm');
     const btn    = document.getElementById('bulkDownloadBtn');
     const count  = document.getElementById('selCount');
-    if (!checks.length || !btn) return;
+    const all    = document.getElementById('checkAllSlips');
+    const checks = document.querySelectorAll('.slip-check');
+    if (!form || !btn) return;
 
     function refresh() {
         const n = document.querySelectorAll('.slip-check:checked').length;
-        btn.disabled = n === 0;
-        count.textContent = n + ' dipilih';
-        if (all) all.checked = n > 0 && n === checks.length;
+        if (count) count.textContent = n + ' dipilih';
+        if (all)   all.checked = n > 0 && n === checks.length;
     }
     checks.forEach(cb => cb.addEventListener('change', refresh));
     if (all) all.addEventListener('change', e => {
         checks.forEach(cb => cb.checked = e.target.checked);
         refresh();
     });
-    document.getElementById('bulkDownloadForm').addEventListener('submit', e => {
-        if (document.querySelectorAll('.slip-check:checked').length === 0) {
+
+    // Belt-and-suspenders: also build the POST body manually on submit
+    // in case the browser doesn't pick up checkboxes via the `form` attribute.
+    form.addEventListener('submit', function (e) {
+        const checked = document.querySelectorAll('.slip-check:checked');
+        if (checked.length === 0) {
             e.preventDefault();
+            alert('Pilih minimal satu slip gaji terlebih dahulu.');
+            return;
         }
+        // Remove any previously-injected hidden inputs, then add fresh ones.
+        form.querySelectorAll('input[name="slip_ids[]"][data-injected]').forEach(el => el.remove());
+        checked.forEach(cb => {
+            const h = document.createElement('input');
+            h.type = 'hidden';
+            h.name = 'slip_ids[]';
+            h.value = cb.value;
+            h.setAttribute('data-injected', '1');
+            form.appendChild(h);
+        });
     });
     refresh();
 })();
