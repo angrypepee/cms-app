@@ -8,12 +8,12 @@
     $hour = now()->hour;
     $greeting = $hour < 11 ? 'Selamat Pagi' : ($hour < 15 ? 'Selamat Siang' : ($hour < 18 ? 'Selamat Sore' : 'Selamat Malam'));
 @endphp
-<div class="d-flex align-items-center justify-content-between mb-4">
-    <div>
-        <h5 class="fw-bold mb-1" style="color:#1e293b">{{ $greeting }}, {{ auth()->user()->name }} 👋</h5>
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+    <div style="min-width:0;flex:1 1 auto">
+        <h5 class="fw-bold mb-1 text-truncate" style="color:#1e293b">{{ $greeting }}, {{ auth()->user()->name }} 👋</h5>
         <p class="text-muted mb-0" style="font-size:.84rem">{{ now()->isoFormat('dddd, D MMMM YYYY') }}</p>
     </div>
-    <a href="{{ route('payroll-slips.create') }}" class="btn btn-primary d-none d-md-inline-flex align-items-center gap-1">
+    <a href="{{ route('payroll-slips.create') }}" class="btn btn-primary d-none d-md-inline-flex align-items-center gap-1 flex-shrink-0">
         <i class="bi bi-plus-lg"></i> Buat Slip Gaji
     </a>
 </div>
@@ -61,9 +61,9 @@
         </div>
     </div>
 </div>
-{{-- Stats Row 2 — Pending items, each links to their list --}}
+{{-- Stats Row 2 — Pending items (5 cards: 2/row mobile, 3/row sm-lg, 5/row xl) --}}
 <div class="row g-3 mb-4">
-    <div class="col-6 col-md-3">
+    <div class="col-6 col-sm-4 col-xl">
         <a href="{{ route('reimbursements.index') }}?status=pending" class="card h-100 text-decoration-none {{ $stats['pending_reimbursements'] > 0 ? 'border-danger border-opacity-50' : '' }}">
             <div class="card-body d-flex align-items-center gap-3 p-3">
                 <div style="width:46px;height:46px;border-radius:.75rem;background:{{ $stats['pending_reimbursements'] > 0 ? '#fef2f2' : '#f8fafc' }};display:flex;align-items:center;justify-content:center;font-size:1.25rem;flex-shrink:0;color:{{ $stats['pending_reimbursements'] > 0 ? '#dc2626' : '#94a3b8' }}">
@@ -73,7 +73,7 @@
             </div>
         </a>
     </div>
-    <div class="col-6 col-md-3">
+    <div class="col-6 col-sm-4 col-xl">
         <a href="{{ route('appreciation.index') }}" class="card h-100 text-decoration-none {{ $stats['pending_claims'] > 0 ? 'border-warning border-opacity-50' : '' }}">
             <div class="card-body d-flex align-items-center gap-3 p-3">
                 <div style="width:46px;height:46px;border-radius:.75rem;background:{{ $stats['pending_claims'] > 0 ? '#fffbeb' : '#f8fafc' }};display:flex;align-items:center;justify-content:center;font-size:1.25rem;flex-shrink:0;color:{{ $stats['pending_claims'] > 0 ? '#d97706' : '#94a3b8' }}">
@@ -83,7 +83,7 @@
             </div>
         </a>
     </div>
-    <div class="col-6 col-md-3">
+    <div class="col-6 col-sm-4 col-xl">
         <a href="{{ route('leaves.index') }}" class="card h-100 text-decoration-none {{ $stats['pending_leaves'] > 0 ? 'border-primary border-opacity-50' : '' }}">
             <div class="card-body d-flex align-items-center gap-3 p-3">
                 <div style="width:46px;height:46px;border-radius:.75rem;background:{{ $stats['pending_leaves'] > 0 ? '#eff6ff' : '#f8fafc' }};display:flex;align-items:center;justify-content:center;font-size:1.25rem;flex-shrink:0;color:{{ $stats['pending_leaves'] > 0 ? '#2563eb' : '#94a3b8' }}">
@@ -93,7 +93,7 @@
             </div>
         </a>
     </div>
-    <div class="col-6 col-md-3">
+    <div class="col-6 col-sm-4 col-xl">
         <a href="{{ route('internal-requests.index') }}" class="card h-100 text-decoration-none {{ $stats['pending_requests'] > 0 ? '' : '' }}">
             <div class="card-body d-flex align-items-center gap-3 p-3">
                 <div style="width:46px;height:46px;border-radius:.75rem;background:{{ $stats['pending_requests'] > 0 ? '#ecfeff' : '#f8fafc' }};display:flex;align-items:center;justify-content:center;font-size:1.25rem;flex-shrink:0;color:{{ $stats['pending_requests'] > 0 ? '#0891b2' : '#94a3b8' }}">
@@ -103,7 +103,7 @@
             </div>
         </a>
     </div>
-    <div class="col-6 col-md-3">
+    <div class="col-12 col-sm-4 col-xl">
         <a href="{{ route('overtime.index') }}?status=pending" class="card h-100 text-decoration-none {{ $stats['pending_overtime'] > 0 ? 'border-warning border-opacity-50' : '' }}">
             <div class="card-body d-flex align-items-center gap-3 p-3">
                 <div style="width:46px;height:46px;border-radius:.75rem;background:{{ $stats['pending_overtime'] > 0 ? '#fffbeb' : '#f8fafc' }};display:flex;align-items:center;justify-content:center;font-size:1.25rem;flex-shrink:0;color:{{ $stats['pending_overtime'] > 0 ? '#d97706' : '#94a3b8' }}">
@@ -130,14 +130,15 @@
         ];
     @endphp
     @foreach($actions as $act)
-    <div class="col-sm-6 col-lg-2">
+    {{-- 7 cards: 2/row mobile, 3/row sm, 4/row md, 7/row xl --}}
+    <div class="col-6 col-sm-4 col-md-3 col-xl">
         <a href="{{ $act['route'] }}" class="action-card text-decoration-none">
             <div class="d-flex align-items-center gap-3">
                 <div style="width:40px;height:40px;border-radius:.6rem;background:{{ $act['bg'] }};color:{{ $act['color'] }};display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0">
                     <i class="bi {{ $act['icon'] }}"></i></div>
-                <div>
-                    <p class="fw-semibold mb-0" style="font-size:.85rem;color:#1e293b">{{ $act['label'] }}</p>
-                    <p class="mb-0" style="font-size:.72rem;color:{{ str_contains($act['sub'], 'menunggu') ? '#dc2626' : '#94a3b8' }}">{{ $act['sub'] }}</p>
+                <div style="min-width:0">
+                    <p class="fw-semibold mb-0 text-truncate" style="font-size:.85rem;color:#1e293b">{{ $act['label'] }}</p>
+                    <p class="mb-0 text-truncate" style="font-size:.72rem;color:{{ str_contains($act['sub'], 'menunggu') ? '#dc2626' : '#94a3b8' }}">{{ $act['sub'] }}</p>
                 </div>
             </div>
         </a>
@@ -200,10 +201,10 @@
             @else
                 <ul class="list-group list-group-flush">
                     @foreach($pendingLeaves as $lr)
-                    <li class="list-group-item d-flex justify-content-between align-items-start px-4 py-2">
-                        <div>
-                            <div class="fw-medium" style="font-size:.875rem;color:#1e293b">{{ $lr->employee->name }}</div>
-                            <div style="font-size:.76rem;color:#64748b">
+                    <li class="list-group-item d-flex justify-content-between align-items-start gap-2 px-3 px-md-4 py-2">
+                        <div style="min-width:0;flex:1 1 auto">
+                            <div class="fw-medium text-truncate" style="font-size:.875rem;color:#1e293b">{{ $lr->employee->name }}</div>
+                            <div class="text-truncate" style="font-size:.76rem;color:#64748b">
                                 {{ $lr->leaveType->name ?? '-' }} &bull;
                                 {{ $lr->start_date->format('d M') }}@if(!$lr->start_date->equalTo($lr->end_date))–{{ $lr->end_date->format('d M') }}@endif
                                 &bull; <strong>{{ $lr->days_count }} hari</strong>
@@ -229,10 +230,10 @@
             @else
                 <ul class="list-group list-group-flush">
                     @foreach($pendingRequests as $req)
-                    <li class="list-group-item d-flex justify-content-between align-items-start px-4 py-2">
-                        <div>
-                            <div class="fw-medium" style="font-size:.875rem;color:#1e293b">{{ $req->employee->name ?? '-' }}</div>
-                            <div style="font-size:.76rem;color:#64748b">{{ $req->type ?? '-' }} &bull; {{ $req->created_at->diffForHumans() }}</div>
+                    <li class="list-group-item d-flex justify-content-between align-items-start gap-2 px-3 px-md-4 py-2">
+                        <div style="min-width:0;flex:1 1 auto">
+                            <div class="fw-medium text-truncate" style="font-size:.875rem;color:#1e293b">{{ $req->employee->name ?? '-' }}</div>
+                            <div class="text-truncate" style="font-size:.76rem;color:#64748b">{{ $req->type ?? '-' }} &bull; {{ $req->created_at->diffForHumans() }}</div>
                         </div>
                         <a href="{{ route('internal-requests.show', $req) }}" class="btn btn-outline-secondary btn-sm" style="font-size:.74rem;padding:.2rem .6rem;flex-shrink:0">Lihat</a>
                     </li>
@@ -254,10 +255,10 @@
             @else
                 <ul class="list-group list-group-flush">
                     @foreach($pendingReimbursements as $r)
-                    <li class="list-group-item d-flex justify-content-between align-items-start px-4 py-2">
-                        <div>
-                            <div class="fw-medium" style="font-size:.875rem;color:#1e293b">{{ $r->employee->name }}</div>
-                            <div style="font-size:.76rem;color:#64748b">
+                    <li class="list-group-item d-flex justify-content-between align-items-start gap-2 px-3 px-md-4 py-2">
+                        <div style="min-width:0;flex:1 1 auto">
+                            <div class="fw-medium text-truncate" style="font-size:.875rem;color:#1e293b">{{ $r->employee->name }}</div>
+                            <div class="text-truncate" style="font-size:.76rem;color:#64748b">
                                 {{ Str::limit($r->title, 28) }} &bull;
                                 <span style="color:#16a34a;font-weight:600">Rp {{ number_format($r->amount, 0, ',', '.') }}</span>
                             </div>
@@ -273,15 +274,19 @@
 
 {{-- Realtime Attendance --}}
 <div class="card mt-4" id="attendance-card">
-    <div class="card-header d-flex align-items-center justify-content-between">
+    <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
         <span class="card-title">
             <i class="bi bi-person-check-fill me-2 text-success"></i>Kehadiran Hari Ini
             <span class="badge bg-success bg-opacity-10 text-success ms-2" id="att-badge">...</span>
         </span>
-        <div class="d-flex align-items-center gap-3">
-            <span class="text-muted d-flex align-items-center gap-1" style="font-size:.75rem">
+        <div class="d-flex flex-wrap align-items-center gap-2 gap-md-3">
+            <span class="text-muted d-none d-sm-flex align-items-center gap-1" style="font-size:.75rem">
                 <span class="rounded-circle bg-success d-inline-block" id="att-dot" style="width:7px;height:7px;animation:pulse-dot 2s infinite"></span>
                 Live &bull; diperbarui: <span id="att-updated">–</span>
+            </span>
+            <span class="text-muted d-flex d-sm-none align-items-center gap-1" style="font-size:.7rem">
+                <span class="rounded-circle bg-success d-inline-block" style="width:7px;height:7px;animation:pulse-dot 2s infinite"></span>
+                <span id="att-updated-mobile">–</span>
             </span>
             <button class="btn btn-sm btn-outline-secondary" onclick="loadAttendance()">
                 <i class="bi bi-arrow-clockwise"></i>
@@ -308,6 +313,8 @@ function loadAttendance() {
         .then(data => {
             document.getElementById('att-badge').textContent = data.present + ' / ' + data.total_active + ' hadir';
             document.getElementById('att-updated').textContent = data.last_updated;
+            const mobileUpd = document.getElementById('att-updated-mobile');
+            if (mobileUpd) mobileUpd.textContent = data.last_updated;
 
             if (data.rows.length === 0) {
                 document.getElementById('att-body').innerHTML =
