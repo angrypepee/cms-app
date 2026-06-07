@@ -9,6 +9,11 @@ RUN apk add --no-cache \
     && docker-php-ext-install -j$(nproc) \
         pdo_mysql mbstring exif pcntl bcmath gd zip intl opcache
 
+# Configure PHP for larger file uploads (up to 10MB)
+RUN echo "upload_max_filesize = 10M" >> /usr/local/etc/php/conf.d/uploads.ini \
+    && echo "post_max_size = 10M" >> /usr/local/etc/php/conf.d/uploads.ini \
+    && echo "memory_limit = 256M" >> /usr/local/etc/php/conf.d/uploads.ini
+
 # Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 

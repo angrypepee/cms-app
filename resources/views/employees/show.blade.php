@@ -337,7 +337,7 @@
                                 <label class="form-label fw-medium" style="font-size:.85rem">File <span class="text-danger">*</span></label>
                                 <input type="file" name="file" class="form-control form-control-sm @error('file') is-invalid @enderror"
                                        accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx" required>
-                                <div class="form-text" style="font-size:.72rem">PDF, JPG, PNG, WEBP, DOC, DOCX, XLS, XLSX — maks. 10 MB</div>
+                                <div class="form-text" style="font-size:.72rem">PDF, JPG, PNG, WEBP, DOC, DOCX, XLS, XLSX — maksimal 10 MB</div>
                                 @error('file')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             </div>
                             <div class="col-md-1">
@@ -675,7 +675,7 @@
                                 <label class="form-label fw-medium" style="font-size:.85rem">File <span class="text-danger">*</span></label>
                                 <input type="file" name="file" class="form-control form-control-sm @error('file') is-invalid @enderror"
                                     accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.zip" required>
-                                <div class="form-text" style="font-size:.72rem">PDF, JPG, PNG, DOC, DOCX, ZIP — maks. 20 MB</div>
+                                <div class="form-text" style="font-size:.72rem">PDF, JPG, PNG, DOC, DOCX, ZIP — maksimal 20 MB</div>
                                 @error('file')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             </div>
                             <div class="col-md-2">

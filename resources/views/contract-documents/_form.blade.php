@@ -330,7 +330,7 @@
             </div>
 
             <div class="col-12"><div class="border-top pt-3 mt-1"><h6 class="mb-0">File &amp; Catatan</h6></div></div>
-            <div class="col-md-6"><label class="form-label">Upload File Kontrak</label><input type="file" name="contract_file" class="form-control @error('contract_file') is-invalid @enderror" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx"><div class="form-text">Opsional, jika ingin menyimpan file PDF/DOC kontrak.</div>@error('contract_file')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
+            <div class="col-md-6"><label class="form-label">Upload File Kontrak</label><input type="file" name="contract_file" class="form-control @error('contract_file') is-invalid @enderror" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx"><div class="form-text" style="font-size:.72rem">Opsional PDF/JPG/PNG/DOC/DOCX — hingga 10 MB</div>@error('contract_file')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
             <div class="col-md-6"><label class="form-label">Catatan</label><textarea name="notes" rows="3" class="form-control">{{ old('notes', $documentModel?->notes ?? '') }}</textarea></div>
 
             <div class="col-12 d-flex justify-content-end gap-2 mt-2">

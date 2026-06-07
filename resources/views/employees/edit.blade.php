@@ -352,7 +352,7 @@
                             <label class="form-label fw-medium" style="font-size:.85rem">File <span class="text-danger">*</span></label>
                             <input type="file" name="file" class="form-control form-control-sm @error('file') is-invalid @enderror"
                                 accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx">
-                            <div class="form-text" style="font-size:.7rem">PDF, JPG, PNG, DOC, DOCX, XLS, XLSX — maks. 10 MB</div>
+                            <div class="form-text" style="font-size:.7rem">PDF, JPG, PNG, DOC, DOCX, XLS, XLSX — maksimal 10 MB</div>
                         </div>
                         <div class="col-md-4 d-none" id="docLinkField">
                             <label class="form-label fw-medium" style="font-size:.85rem">URL <span class="text-danger">*</span></label>
