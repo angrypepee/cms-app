@@ -22,9 +22,14 @@
             @endforeach
         </select>
     </div>
-    <div class="col-md-9">
-        <label class="form-label small fw-semibold">Nama Project <span class="text-danger">*</span></label>
-        <input type="text" name="name" class="form-control" required maxlength="200" value="{{ old('name', $project->name ?? '') }}">
+    <div class="col-md-6">
+        <label class="form-label small fw-semibold">Nomor Project</label>
+        <div class="input-group">
+            <input type="text" name="code" class="form-control @error('code') is-invalid @enderror" maxlength="50" placeholder="Contoh: PRJ-202406-0001" value="{{ old('code', $project->code ?? '') }}">
+            <button type="button" class="btn btn-outline-secondary" id="generate-project-code">Generate</button>
+        </div>
+        <div class="form-text" style="font-size:.72rem">Format otomatis: PRJ-YYYYMM-XXXX, atau edit manual sesuai kebutuhan.</div>
+        @error('code')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
     </div>
     <div class="col-md-3">
         <label class="form-label small fw-semibold">Status</label>
@@ -33,6 +38,10 @@
                 <option value="{{ $k }}" @selected(old('status', $project->status ?? 'planning')===$k)>{{ $v }}</option>
             @endforeach
         </select>
+    </div>
+    <div class="col-md-9">
+        <label class="form-label small fw-semibold">Nama Project <span class="text-danger">*</span></label>
+        <input type="text" name="name" class="form-control" required maxlength="200" value="{{ old('name', $project->name ?? '') }}">
     </div>
     <div class="col-md-4">
         <label class="form-label small fw-semibold">Tanggal Mulai</label>
@@ -55,3 +64,30 @@
         <textarea name="notes" class="form-control" rows="2" maxlength="2000">{{ old('notes', $project->notes ?? '') }}</textarea>
     </div>
 </div>
+
+<script>
+(function () {
+    const generateBtn = document.getElementById('generate-project-code');
+    const codeInput = document.querySelector('[name="code"]');
+    
+    if (generateBtn && codeInput) {
+        generateBtn.addEventListener('click', function () {
+            const now = new Date();
+            const yyyy = String(now.getFullYear());
+            const mm = String(now.getMonth() + 1).padStart(2, '0');
+            const prefix = 'PRJ-' + yyyy + mm;
+            
+            // Ambil nomor terakhir dari input jika sudah ada
+            let next = 1;
+            const current = (codeInput.value || '').trim();
+            const regex = new RegExp('^PRJ-' + yyyy + mm + '-(\\d{4})$');
+            const matched = current.match(regex);
+            if (matched) {
+                next = parseInt(matched[1], 10) + 1;
+            }
+            
+            codeInput.value = prefix + '-' + String(next).padStart(4, '0');
+        });
+    }
+})();
+</script>

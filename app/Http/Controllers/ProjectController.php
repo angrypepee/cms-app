@@ -40,7 +40,10 @@ class ProjectController extends Controller
     public function store(Request $request)
     {
         $data = $this->validateData($request);
-        $data['code'] = Project::generateCode();
+        // Auto-generate code if not provided
+        if (empty($data['code'])) {
+            $data['code'] = Project::generateCode();
+        }
         $project = Project::create($data);
         return redirect()->route('projects.show', $project)->with('success', "Project {$project->code} dibuat.");
     }
@@ -77,6 +80,7 @@ class ProjectController extends Controller
     private function validateData(Request $request): array
     {
         return $request->validate([
+            'code'        => 'nullable|string|max:50|unique:projects,code' . ($request->route('project') ? ',' . $request->route('project')->id : ''),
             'client_id'   => 'required|exists:clients,id',
             'company_id'  => 'nullable|exists:companies,id',
             'name'        => 'required|string|max:200',

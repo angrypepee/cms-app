@@ -12,9 +12,11 @@
     <style>
         :root {
             --sidebar-width: 260px;
+            --sidebar-left: -260px;
             --sidebar-bg-from: #1e3a8a;
             --sidebar-bg-to:   #1d4ed8;
             --primary: #2563eb;
+            --sidebar-transform: translateX(-100%);
         }
         body { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: #f1f5f9; }
 
@@ -26,7 +28,7 @@
             display: flex; flex-direction: column;
             z-index: 1040; overflow-y: auto;
             box-shadow: 4px 0 24px rgba(0,0,0,.18);
-            transition: transform .25s ease;
+            transition: left .25s ease;
         }
         #sidebar .brand {
             padding: 1.25rem 1.5rem;
@@ -72,6 +74,9 @@
             overflow: hidden;
             transition: max-height .25s ease, opacity .2s;
             max-height: 600px; opacity: 1;
+            list-style: none;
+            padding: 0;
+            margin: 0;
         }
         #sidebar .nav-group-items.collapsed {
             max-height: 0; opacity: 0;
@@ -197,13 +202,57 @@
         }
         .action-card:hover { border-color: var(--primary); box-shadow: 0 4px 16px rgba(37,99,235,.1); }
 
-        /* ── Responsive ── */
+        /* ── Sidebar Overlay: Base ── */
+        #sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 1039;
+            background: rgba(0,0,0,.4);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity .25s ease;
+        }
+        
+        /* ── Sidebar Overlay: Visible State ── */
+        #sidebar-overlay.show {
+            pointer-events: auto;
+            opacity: 1;
+        }
+
+        /* ── Sidebar Hidden State (Mobile Default) ── */
+        #sidebar.hidden {
+            transform: translateX(-100%) !important;
+        }
+        
+        /* ── Sidebar Visible State ── */
+        #sidebar.visible {
+            transform: translateX(0) !important;
+        }
+        
+        /* ── Sidebar Visibility: Desktop (default) ── */
+        @media (min-width: 992px) {
+            #sidebar {
+                transform: translateX(0) !important;
+                left: 0 !important;
+            }
+            #sidebar.hidden {
+                transform: translateX(0) !important;
+                left: 0 !important;
+            }
+            #sidebar-overlay {
+                display: none !important;
+            }
+        }
+
+        /* ── Responsive: Mobile ── */
         @media (max-width: 991px) {
-            #sidebar { transform: translateX(-100%); }
-            #sidebar.show { transform: translateX(0); }
             #main-wrapper { margin-left: 0; }
-            #sidebar-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 1039; display: none; }
-            #sidebar-overlay.show { display: block; }
+            #sidebar-overlay { 
+                display: block !important;
+            }
         }
 
         @media print {
@@ -351,7 +400,7 @@
                     <span class="nav-group-label">SDM</span>
                     <i class="bi bi-chevron-down nav-group-arrow"></i>
                 </div>
-                <div class="nav-group-items {{ $inSdm ? '' : 'collapsed' }}" id="ng-sdm">
+                <ul class="nav-group-items {{ $inSdm ? '' : 'collapsed' }}" data-group="sdm">
                     <li class="nav-item">
                         <a href="{{ route('companies.index') }}" class="{{ request()->routeIs('companies.*') ? 'active' : '' }}">
                             <i class="bi bi-building"></i> Perusahaan
@@ -386,7 +435,7 @@
                             @if($pendingCount > 0)<span class="badge bg-danger rounded-pill ms-auto">{{ $pendingCount }}</span>@endif
                         </a>
                     </li>
-                </div>
+                </ul>
             </li>
 
             {{-- Payroll & Keuangan --}}
@@ -395,7 +444,7 @@
                     <span class="nav-group-label">Payroll &amp; Keuangan</span>
                     <i class="bi bi-chevron-down nav-group-arrow"></i>
                 </div>
-                <div class="nav-group-items {{ $inPayroll ? '' : 'collapsed' }}" id="ng-payroll">
+                <ul class="nav-group-items {{ $inPayroll ? '' : 'collapsed' }}" data-group="payroll">
                     <li class="nav-item">
                         <a href="{{ route('payroll-info.index') }}" class="{{ request()->routeIs('payroll-info.*') ? 'active' : '' }}">
                             <i class="bi bi-cash-coin"></i> Info Penggajian
@@ -421,7 +470,7 @@
                             <i class="bi bi-receipt"></i> Reimbursement
                         </a>
                     </li>
-                </div>
+                </ul>
             </li>
 
             {{-- Project & B2B --}}
@@ -430,7 +479,7 @@
                     <span class="nav-group-label">Project &amp; B2B</span>
                     <i class="bi bi-chevron-down nav-group-arrow"></i>
                 </div>
-                <div class="nav-group-items {{ $inB2b ? '' : 'collapsed' }}" id="ng-b2b">
+                <ul class="nav-group-items {{ $inB2b ? '' : 'collapsed' }}" data-group="b2b">
                     <li class="nav-item">
                         <a href="{{ route('project-plan.index') }}" class="{{ request()->routeIs('project-plan.*') ? 'active' : '' }}">
                             <i class="bi bi-layout-text-sidebar-reverse"></i> Project Plan
@@ -468,7 +517,7 @@
                             <i class="bi bi-bank"></i> Rekening Bank
                         </a>
                     </li>
-                </div>
+                </ul>
             </li>
 
             {{-- Kontrak & Dokumen --}}
@@ -477,7 +526,7 @@
                     <span class="nav-group-label">Kontrak &amp; Dokumen</span>
                     <i class="bi bi-chevron-down nav-group-arrow"></i>
                 </div>
-                <div class="nav-group-items {{ $inKontrak ? '' : 'collapsed' }}" id="ng-kontrak">
+                <ul class="nav-group-items {{ $inKontrak ? '' : 'collapsed' }}" data-group="kontrak">
                     <li class="nav-item">
                         <a href="{{ route('kontrak-kerja.index') }}" class="{{ request()->routeIs('kontrak-kerja.*') ? 'active' : '' }}">
                             <i class="bi bi-file-earmark-person"></i> Kontrak Kerja
@@ -488,7 +537,7 @@
                             <i class="bi bi-folder2-open"></i> Dokumen Kontrak
                         </a>
                     </li>
-                </div>
+                </ul>
             </li>
 
             {{-- Komunikasi --}}
@@ -497,13 +546,13 @@
                     <span class="nav-group-label">Komunikasi</span>
                     <i class="bi bi-chevron-down nav-group-arrow"></i>
                 </div>
-                <div class="nav-group-items {{ $inKomunikasi ? '' : 'collapsed' }}" id="ng-komunikasi">
+                <ul class="nav-group-items {{ $inKomunikasi ? '' : 'collapsed' }}" data-group="komunikasi">
                     <li class="nav-item">
                         <a href="{{ route('announcements.index') }}" class="{{ request()->routeIs('announcements.*') ? 'active' : '' }}">
                             <i class="bi bi-megaphone"></i> Pengumuman
                         </a>
                     </li>
-                </div>
+                </ul>
             </li>
 
             {{-- Administrasi --}}
@@ -512,7 +561,7 @@
                     <span class="nav-group-label">Administrasi</span>
                     <i class="bi bi-chevron-down nav-group-arrow"></i>
                 </div>
-                <div class="nav-group-items {{ $inAdmin ? '' : 'collapsed' }}" id="ng-admin">
+                <ul class="nav-group-items {{ $inAdmin ? '' : 'collapsed' }}" data-group="admin">
                     <li class="nav-item">
                         <a href="{{ route('master-data.index') }}" class="{{ request()->routeIs('master-data.*') ? 'active' : '' }}">
                             <i class="bi bi-list-ul"></i> Data Master
@@ -530,7 +579,7 @@
                         </a>
                     </li>
                     @endif
-                </div>
+                </ul>
             </li>
         @endif
         @endauth
@@ -754,10 +803,72 @@
 </div>
 
 <script>
+// ── Sidebar Toggle ────────────────────────────────────────
 function toggleSidebar() {
-    document.getElementById('sidebar').classList.toggle('show');
-    document.getElementById('sidebar-overlay').classList.toggle('show');
+    var sidebar = document.getElementById('sidebar');
+    var overlay = document.getElementById('sidebar-overlay');
+    
+    if (!sidebar || !overlay) return;
+    
+    // Toggle classes instead of inline styles
+    if (sidebar.classList.contains('hidden')) {
+        sidebar.classList.remove('hidden');
+        sidebar.classList.add('visible');
+        overlay.classList.add('show');
+    } else {
+        sidebar.classList.remove('visible');
+        sidebar.classList.add('hidden');
+        overlay.classList.remove('show');
+    }
+    
+    console.log('toggleSidebar: classes are now', Array.from(sidebar.classList));
 }
+
+function closeSidebar() {
+    var sidebar = document.getElementById('sidebar');
+    var overlay = document.getElementById('sidebar-overlay');
+    
+    if (!sidebar || !overlay) return;
+    
+    sidebar.classList.remove('visible');
+    sidebar.classList.add('hidden');
+    overlay.classList.remove('show');
+}
+
+// Sidebar initialization
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOMContentLoaded: Initializing sidebar');
+    
+    const sidebar = document.getElementById('sidebar');
+    
+    // Initialize sidebar state on page load
+    if (window.innerWidth < 992) {
+        sidebar.classList.remove('visible');
+        sidebar.classList.add('hidden');
+        console.log('Mobile: Adding hidden class');
+    } else {
+        sidebar.classList.remove('hidden');
+        sidebar.classList.add('visible');
+        console.log('Desktop: Adding visible class');
+    }
+    
+    // Close sidebar on nav link click
+    document.querySelectorAll('#sidebar .nav-item a').forEach(function(link) {
+        link.addEventListener('click', function() {
+            if (window.innerWidth < 992) {
+                closeSidebar();
+            }
+        });
+    });
+    
+    // Close sidebar when window resizes to desktop
+    window.addEventListener('resize', function() {
+        if (window.innerWidth >= 992) {
+            sidebar.classList.remove('hidden');
+            sidebar.classList.add('visible');
+        }
+    });
+});
 
 // ── Collapsible sidebar groups ────────────────────────────────
 (function () {
@@ -774,8 +885,8 @@ function toggleSidebar() {
 
     document.querySelectorAll('.nav-group-header').forEach(function (header) {
         var group = header.dataset.group;
-        var items = document.getElementById('ng-' + group);
-        if (!items) return;
+        var items = header.nextElementSibling;
+        if (!items || !items.classList.contains('nav-group-items')) return;
 
         header.addEventListener('click', function () {
             var isCollapsed = header.classList.toggle('collapsed');
