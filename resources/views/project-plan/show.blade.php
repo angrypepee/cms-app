@@ -167,10 +167,16 @@
                                     @endif
                                 </td>
                                 <td>
-                                    <span class="badge bg-{{ $empWsColor }} bg-opacity-10 text-{{ $empWsColor }}" style="font-size:.72rem">
-                                        <i class="bi bi-{{ $empWs==='completed' ? 'check-circle-fill' : ($empWs==='in_progress' ? 'activity' : 'circle') }} me-1"></i>
-                                        {{ $empWsLabel }}
-                                    </span>
+                                    <form method="POST" 
+                                        action="{{ route('project-plan.members.work-status', [$project, $emp]) }}"
+                                        class="d-inline-block">
+                                        @csrf @method('PATCH')
+                                        <select name="work_status" class="form-select form-select-sm" style="font-size:.82rem;padding:.25rem .5rem;width:auto;min-width:140px" onchange="this.form.submit()">
+                                            <option value="not_started" {{ $empWs === 'not_started' ? 'selected' : '' }}>Belum Dimulai</option>
+                                            <option value="in_progress" {{ $empWs === 'in_progress' ? 'selected' : '' }}>Sedang Dikerjakan</option>
+                                            <option value="completed" {{ $empWs === 'completed' ? 'selected' : '' }}>Selesai</option>
+                                        </select>
+                                    </form>
                                     @if($emp->pivot->work_started_at)
                                         <div class="text-muted" style="font-size:.7rem">Mulai: {{ $emp->pivot->work_started_at?->format('d M Y') }}</div>
                                     @endif
@@ -215,41 +221,6 @@
                 </div>
             @endif
         </div>
-
-        {{-- Work History --}}
-        @if($project->workHistories->isNotEmpty())
-        <div class="card mb-4">
-            <div class="card-header">
-                <span class="card-title mb-0"><i class="bi bi-clock-history me-2 text-primary"></i>History Pekerjaan Tim</span>
-            </div>
-            <div class="table-responsive">
-                <table class="table table-sm align-middle mb-0" style="font-size:.82rem">
-                    <thead class="table-light">
-                        <tr><th>Karyawan</th><th>Perubahan Status</th><th>Catatan</th><th>Dicatat Oleh</th><th>Waktu</th></tr>
-                    </thead>
-                    <tbody>
-                        @foreach($project->workHistories as $h)
-                        @php [$toLabel, $toColor] = \App\Models\Pivots\ProjectMemberPivot::workStatusLabel($h->to_status); @endphp
-                        <tr>
-                            <td class="fw-medium">{{ $h->employee->name ?? '—' }}</td>
-                            <td>
-                                @if($h->from_status)
-                                    @php [$fromLabel] = \App\Models\Pivots\ProjectMemberPivot::workStatusLabel($h->from_status); @endphp
-                                    <span class="text-muted">{{ $fromLabel }}</span>
-                                    <i class="bi bi-arrow-right mx-1 text-muted"></i>
-                                @endif
-                                <span class="badge bg-{{ $toColor }} bg-opacity-10 text-{{ $toColor }}">{{ $toLabel }}</span>
-                            </td>
-                            <td class="text-muted">{{ $h->note ?? '—' }}</td>
-                            <td class="text-muted">{{ $h->logger?->name ?? 'Sistem' }}</td>
-                            <td class="text-muted" style="white-space:nowrap">{{ $h->created_at->isoFormat('D MMM YYYY, HH:mm') }}</td>
-                        </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-        </div>
-        @endif
 
         {{-- Related contracts --}}
         @php

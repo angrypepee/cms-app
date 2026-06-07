@@ -149,4 +149,47 @@ class ProjectPlanController extends Controller
 
         return back()->with('success', 'Data anggota tim diperbarui.');
     }
+
+    public function updateMemberWorkStatus(Request $request, Project $project, Employee $employee)
+    {
+        $member = $project->members()->where('employee_id', $employee->id)->firstOrFail();
+
+        $validated = $request->validate([
+            'work_status' => 'required|in:not_started,in_progress,completed',
+        ]);
+
+        $oldStatus = $member->work_status ?? 'not_started';
+        $newStatus = $validated['work_status'];
+
+        $updates = ['work_status' => $newStatus];
+
+        if ($newStatus === 'in_progress' && !$member->work_started_at) {
+            $updates['work_started_at'] = now();
+        }
+        if ($newStatus === 'completed') {
+            $updates['work_completed_at'] = now();
+            if (!$member->work_started_at) {
+                $updates['work_started_at'] = now();
+            }
+        }
+        if ($newStatus === 'not_started') {
+            $updates['work_started_at'] = null;
+            $updates['work_completed_at'] = null;
+        }
+
+        $project->members()->where('employee_id', $employee->id)->update($updates);
+
+        // Log history
+        ProjectWorkHistory::create([
+            'project_id'  => $project->id,
+            'employee_id' => $employee->id,
+            'logged_by'   => Auth::id(),
+            'from_status' => $oldStatus,
+            'to_status'   => $newStatus,
+            'note'        => 'Status diperbarui oleh admin.',
+        ]);
+
+        return back()->with('success', 'Status pekerjaan berhasil diperbarui.');
+    }
 }
+

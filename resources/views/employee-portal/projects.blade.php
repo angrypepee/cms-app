@@ -287,25 +287,6 @@ $projectStatusLabels = [
                     </div>
                 </div>
                 @endif
-
-                {{-- Work history for this employee --}}
-                @if(isset($project->my_history) && $project->my_history->isNotEmpty())
-                <div class="col-12">
-                    <div class="border rounded p-3">
-                        <div class="text-muted mb-2" style="font-size:.72rem;text-transform:uppercase;letter-spacing:.06em">
-                            <i class="bi bi-clock-history me-1"></i>History Pekerjaan Saya
-                        </div>
-                        @foreach($project->my_history as $h)
-                        @php [$toLabel, $toColor] = \App\Models\Pivots\ProjectMemberPivot::workStatusLabel($h->to_status); @endphp
-                        <div class="d-flex align-items-center gap-2 py-1 {{ !$loop->last ? 'border-bottom' : '' }}" style="font-size:.8rem">
-                            <span class="badge bg-{{ $toColor }} bg-opacity-10 text-{{ $toColor }}" style="font-size:.7rem;white-space:nowrap">{{ $toLabel }}</span>
-                            <span class="text-muted flex-grow-1">{{ $h->note }}</span>
-                            <span class="text-muted" style="font-size:.72rem;white-space:nowrap">{{ $h->created_at->isoFormat('D MMM YYYY, HH:mm') }}</span>
-                        </div>
-                        @endforeach
-                    </div>
-                </div>
-                @endif
             </div>
         </div>
 

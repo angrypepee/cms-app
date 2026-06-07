@@ -252,6 +252,7 @@ Route::middleware('auth')->group(function () {
         Route::get('project-plan/{project}',                               [ProjectPlanController::class, 'show'])->name('project-plan.show');
         Route::post('project-plan/{project}/members',                      [ProjectPlanController::class, 'addMember'])->name('project-plan.members.add');
         Route::patch('project-plan/{project}/members/{employee}',          [ProjectPlanController::class, 'updateMember'])->name('project-plan.members.update');
+        Route::patch('project-plan/{project}/members/{employee}/work-status', [ProjectPlanController::class, 'updateMemberWorkStatus'])->name('project-plan.members.work-status');
         Route::delete('project-plan/{project}/members/{employee}',         [ProjectPlanController::class, 'removeMember'])->name('project-plan.members.remove');
 
         Route::resource('quotations', QuotationController::class);
