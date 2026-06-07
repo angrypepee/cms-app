@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\EmployeeCategory;
 use App\Models\Department;
 use App\Models\Employee;
+use App\Models\FirstParty;
 use App\Models\Position;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -15,6 +16,7 @@ class MasterDataController extends Controller
     {
         $positions   = Position::withCount('employees')->orderBy('name')->get();
         $departments = Department::withCount('employees')->orderBy('name')->get();
+        $firstParties = FirstParty::orderByDesc('is_active')->orderBy('name')->get();
 
         // Counts per employee category (enum, system-managed)
         $categoryCounts = Employee::select('employee_category', DB::raw('COUNT(*) as total'))
@@ -22,7 +24,7 @@ class MasterDataController extends Controller
             ->pluck('total', 'employee_category');
         $categories = EmployeeCategory::cases();
 
-        return view('master-data.index', compact('positions', 'departments', 'categories', 'categoryCounts'));
+        return view('master-data.index', compact('positions', 'departments', 'categories', 'categoryCounts', 'firstParties'));
     }
 
     // ── Positions ────────────────────────────────────────────────
@@ -112,5 +114,49 @@ class MasterDataController extends Controller
         $department->delete();
         return redirect()->route('master-data.index', ['tab' => 'departments'])
             ->with('success', "Departemen \"{$name}\" berhasil dihapus.");
+    }
+
+    // ── First Parties ─────────────────────────────────────────────
+    public function storeFirstParty(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255|unique:first_parties,name',
+            'representative_name' => 'nullable|string|max:255',
+            'representative_position' => 'nullable|string|max:255',
+            'address' => 'nullable|string',
+            'is_active' => 'boolean',
+        ]);
+
+        $validated['is_active'] = $request->boolean('is_active', true);
+        FirstParty::create($validated);
+
+        return redirect()->route('master-data.index', ['tab' => 'first-parties'])
+            ->with('success', "Pihak pertama \"{$validated['name']}\" berhasil ditambahkan.");
+    }
+
+    public function updateFirstParty(Request $request, FirstParty $firstParty)
+    {
+        $validated = $request->validate([
+            'name' => "required|string|max:255|unique:first_parties,name,{$firstParty->id}",
+            'representative_name' => 'nullable|string|max:255',
+            'representative_position' => 'nullable|string|max:255',
+            'address' => 'nullable|string',
+            'is_active' => 'boolean',
+        ]);
+
+        $validated['is_active'] = $request->boolean('is_active', false);
+        $firstParty->update($validated);
+
+        return redirect()->route('master-data.index', ['tab' => 'first-parties'])
+            ->with('success', 'Data pihak pertama berhasil diperbarui.');
+    }
+
+    public function destroyFirstParty(FirstParty $firstParty)
+    {
+        $name = $firstParty->name;
+        $firstParty->delete();
+
+        return redirect()->route('master-data.index', ['tab' => 'first-parties'])
+            ->with('success', "Pihak pertama \"{$name}\" berhasil dihapus.");
     }
 }

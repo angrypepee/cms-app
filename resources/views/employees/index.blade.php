@@ -101,12 +101,15 @@
             <table class="table table-hover mb-0 align-middle">
                 <thead>
                     <tr>
-                        <th>ID</th>
+                        <th style="width:36px"></th>
                         <th>Karyawan</th>
                         <th>Perusahaan</th>
                         <th>Jabatan / Dept</th>
                         <th>Kategori</th>
+                        @if(auth()->user()->isAdmin())
                         <th>BPJS</th>
+                        <th>Gaji Pokok</th>
+                        @endif
                         <th>Status</th>
                         <th></th>
                     </tr>
@@ -119,24 +122,34 @@
                         $bgColor  = $colors[crc32($emp->employee_id) % count($colors)];
                     @endphp
                     <tr>
-                        <td><span class="font-monospace text-muted" style="font-size:.78rem">{{ $emp->employee_id }}</span></td>
                         <td>
-                            <div class="d-flex align-items-center gap-2">
-                                <div style="width:36px;height:36px;border-radius:50%;background:{{ $bgColor }};display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;color:#fff;flex-shrink:0">{{ $initials }}</div>
-                                <div>
-                                    <div class="fw-medium" style="font-size:.875rem;color:#1e293b">{{ $emp->name }}</div>
-                                    @if($emp->user)
-                                        <div class="text-muted" style="font-size:.74rem"><i class="bi bi-envelope me-1"></i>{{ $emp->user->email }}</div>
-                                    @else
-                                        <span class="badge" style="font-size:.65rem;background:#fef2f2;color:#dc2626;border:1px solid #fecaca">Belum ada akun</span>
+                            <div style="width:36px;height:36px;border-radius:50%;background:{{ $bgColor }};display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;color:#fff;flex-shrink:0">{{ $initials }}</div>
+                        </td>
+                        <td>
+                            <div>
+                                <a href="{{ route('employees.show', $emp) }}" class="fw-medium text-decoration-none" style="font-size:.875rem;color:#1e293b">{{ $emp->name }}</a>
+                                <div class="d-flex align-items-center gap-1 mt-1 flex-wrap">
+                                    <span class="font-monospace text-muted" style="font-size:.72rem">{{ $emp->employee_id }}</span>
+                                    @if(!$emp->user)
+                                        <span class="badge" style="font-size:.62rem;background:#fef2f2;color:#dc2626;border:1px solid #fecaca">Belum ada akun</span>
+                                    @endif
+                                    @if($emp->github_url)
+                                        <a href="{{ $emp->github_url }}" target="_blank" class="text-muted" title="GitHub" style="font-size:.8rem"><i class="bi bi-github"></i></a>
+                                    @endif
+                                    @if($emp->linkedin_url)
+                                        <a href="{{ $emp->linkedin_url }}" target="_blank" style="color:#0a66c2;font-size:.8rem" title="LinkedIn"><i class="bi bi-linkedin"></i></a>
+                                    @endif
+                                    @if($emp->portfolio_url || $emp->gitlab_url)
+                                        <a href="{{ $emp->portfolio_url ?? $emp->gitlab_url }}" target="_blank" class="text-muted" style="font-size:.8rem" title="Portfolio"><i class="bi bi-globe"></i></a>
                                     @endif
                                 </div>
                             </div>
                         </td>
                         <td class="text-muted" style="font-size:.85rem">{{ $emp->company->name ?? '-' }}</td>
                         <td style="font-size:.85rem">
-                            {{ $emp->position ?? '-' }}
-                            @if($emp->department)<br><span class="text-muted" style="font-size:.78rem">{{ $emp->department }}</span>@endif
+                            <div>{{ $emp->position ?? '-' }}</div>
+                            @if($emp->department)<div class="text-muted" style="font-size:.78rem">{{ $emp->department }}</div>@endif
+                            @if($emp->grade)<span class="badge bg-secondary bg-opacity-10 text-secondary" style="font-size:.68rem">{{ $emp->grade }}</span>@endif
                         </td>
                         <td>
                             @if($emp->employee_category)
@@ -145,6 +158,7 @@
                                 <span class="text-muted">-</span>
                             @endif
                         </td>
+                        @if(auth()->user()->isAdmin())
                         <td>
                             @php $bk = !empty($emp->bpjs_kesehatan); $bkt = !empty($emp->bpjs_ketenagakerjaan); @endphp
                             <div class="d-flex flex-column gap-1">
@@ -156,6 +170,10 @@
                                 </span>
                             </div>
                         </td>
+                        <td class="fw-semibold text-success" style="font-size:.82rem">
+                            Rp {{ number_format($emp->base_salary, 0, ',', '.') }}
+                        </td>
+                        @endif
                         <td>
                             @if($emp->is_active)
                                 <span class="badge bg-success bg-opacity-10 text-success" style="font-size:.72rem">Aktif</span>
@@ -166,11 +184,13 @@
                         <td>
                             <div class="d-flex gap-1">
                                 <a href="{{ route('employees.show', $emp) }}" class="btn btn-sm btn-outline-secondary">Lihat</a>
+                                @if(auth()->user()->isAdmin())
                                 <a href="{{ route('employees.edit', $emp) }}" class="btn btn-sm btn-outline-primary">Edit</a>
                                 <form method="POST" action="{{ route('employees.destroy', $emp) }}" onsubmit="return confirm('Hapus karyawan ini?')">
                                     @csrf @method('DELETE')
                                     <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash3"></i></button>
                                 </form>
+                                @endif
                             </div>
                         </td>
                     </tr>

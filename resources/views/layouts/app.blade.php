@@ -47,6 +47,35 @@
             text-transform: uppercase; letter-spacing: .08em;
             padding: 1.25rem 1.25rem .35rem;
         }
+        /* Collapsible group header */
+        #sidebar .nav-group-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: .9rem 1.25rem .3rem;
+            cursor: pointer; user-select: none;
+        }
+        #sidebar .nav-group-header .nav-group-label {
+            font-size: .65rem; font-weight: 700; color: rgba(147,197,253,.7);
+            text-transform: uppercase; letter-spacing: .08em;
+        }
+        #sidebar .nav-group-header .nav-group-arrow {
+            font-size: .65rem; color: rgba(147,197,253,.55);
+            transition: transform .2s;
+        }
+        #sidebar .nav-group-header.collapsed .nav-group-arrow {
+            transform: rotate(-90deg);
+        }
+        #sidebar .nav-group-header:hover .nav-group-label,
+        #sidebar .nav-group-header:hover .nav-group-arrow {
+            color: rgba(191,219,254,.9);
+        }
+        #sidebar .nav-group-items {
+            overflow: hidden;
+            transition: max-height .25s ease, opacity .2s;
+            max-height: 600px; opacity: 1;
+        }
+        #sidebar .nav-group-items.collapsed {
+            max-height: 0; opacity: 0;
+        }
         #sidebar .nav-item a {
             display: flex; align-items: center; gap: .75rem;
             padding: .6rem 1.25rem; border-radius: .6rem;
@@ -216,12 +245,38 @@
             {{-- ── Employee Portal Nav ── --}}
             <li class="nav-item">
                 <a href="{{ route('my.dashboard') }}" class="{{ request()->routeIs('my.dashboard') ? 'active' : '' }}">
-                    <i class="bi bi-house-fill"></i> Beranda Saya
+                    <i class="bi bi-house-fill"></i> Beranda
                 </a>
             </li>
             <li class="nav-item">
-                <a href="{{ route('my.slips') }}" class="{{ request()->routeIs('my.slips') ? 'active' : '' }}">
-                    <i class="bi bi-receipt-cutoff"></i> Slip Gaji Saya
+                <a href="{{ route('my.profile') }}" class="{{ request()->routeIs('my.profile*') ? 'active' : '' }}">
+                    <i class="bi bi-person-circle"></i> Profil Saya
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('my.projects') }}" class="{{ request()->routeIs('my.projects*') ? 'active' : '' }}">
+                    <i class="bi bi-kanban"></i> Project Saya
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('my.contracts') }}" class="{{ request()->routeIs('my.contracts*') ? 'active' : '' }}">
+                    @php
+                        $myUnsignedCount = auth()->user()->employee
+                            ? \App\Models\ContractDocument::where('employee_id', auth()->user()->employee->id)
+                                ->whereNull('signed_by_employee')->count()
+                            : 0;
+                    @endphp
+                    <i class="bi bi-file-earmark-check"></i> Kontrak Saya
+                    @if($myUnsignedCount > 0)
+                        <span class="badge bg-warning text-dark rounded-pill ms-auto" style="font-size:.65rem">{{ $myUnsignedCount }}</span>
+                    @endif
+                </a>
+            </li>
+
+            <li style="padding:.75rem 1.25rem .25rem"><div class="nav-section" style="padding:0">Keuangan</div></li>
+            <li class="nav-item">
+                <a href="{{ route('my.slips') }}" class="{{ request()->routeIs('my.slips*') ? 'active' : '' }}">
+                    <i class="bi bi-receipt-cutoff"></i> Slip Gaji
                 </a>
             </li>
             <li class="nav-item">
@@ -231,19 +286,11 @@
             </li>
             <li class="nav-item">
                 <a href="{{ route('my.reimbursements') }}" class="{{ request()->routeIs('my.reimbursements*') ? 'active' : '' }}">
-                    <i class="bi bi-receipt"></i> Reimbursement Saya
+                    <i class="bi bi-receipt"></i> Reimbursement
                 </a>
             </li>
-            <li style="padding:.75rem 1.25rem .25rem"><div class="nav-section" style="padding:0">Info &amp; Layanan</div></li>
-            <li class="nav-item">
-                <a href="{{ route('notifications.index') }}" class="{{ request()->routeIs('notifications.*') ? 'active' : '' }}">
-                    @php $empUnread = auth()->user()->unreadNotifications()->count(); @endphp
-                    <i class="bi bi-bell"></i> Notifikasi
-                    @if($empUnread > 0)
-                        <span class="badge bg-danger rounded-pill ms-auto">{{ $empUnread }}</span>
-                    @endif
-                </a>
-            </li>
+
+            <li style="padding:.75rem 1.25rem .25rem"><div class="nav-section" style="padding:0">Kehadiran &amp; Cuti</div></li>
             <li class="nav-item">
                 <a href="{{ route('my.calendar') }}" class="{{ request()->routeIs('my.calendar') ? 'active' : '' }}">
                     <i class="bi bi-calendar3"></i> Kalender
@@ -255,151 +302,236 @@
                 </a>
             </li>
             <li class="nav-item">
+                <a href="{{ route('my.overtime') }}" class="{{ request()->routeIs('my.overtime*') ? 'active' : '' }}">
+                    <i class="bi bi-clock-history"></i> Lembur
+                </a>
+            </li>
+
+            <li style="padding:.75rem 1.25rem .25rem"><div class="nav-section" style="padding:0">Komunikasi</div></li>
+            <li class="nav-item">
+                <a href="{{ route('notifications.index') }}" class="{{ request()->routeIs('notifications.*') ? 'active' : '' }}">
+                    @php $empUnread = auth()->user()->unreadNotifications()->count(); @endphp
+                    <i class="bi bi-bell"></i> Notifikasi
+                    @if($empUnread > 0)
+                        <span class="badge bg-danger rounded-pill ms-auto">{{ $empUnread }}</span>
+                    @endif
+                </a>
+            </li>
+            <li class="nav-item">
                 <a href="{{ route('my.announcements') }}" class="{{ request()->routeIs('my.announcements') ? 'active' : '' }}">
                     <i class="bi bi-megaphone"></i> Pengumuman
                 </a>
             </li>
             <li class="nav-item">
                 <a href="{{ route('my.requests') }}" class="{{ request()->routeIs('my.requests*') ? 'active' : '' }}">
-                    <i class="bi bi-envelope-paper"></i> Permohonan Saya
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="{{ route('my.overtime') }}" class="{{ request()->routeIs('my.overtime*') ? 'active' : '' }}">
-                    <i class="bi bi-clock-history"></i> Pengajuan Lembur
+                    <i class="bi bi-envelope-paper"></i> Permohonan
                 </a>
             </li>
         @else
             {{-- ── Admin / HR Nav ── --}}
+            @php
+                // Determine which group is active so it opens by default
+                $inSdm       = request()->routeIs('companies.*','employees.*','calendar.*','leaves.*','overtime.*','internal-requests.*');
+                $inPayroll   = request()->routeIs('payroll-info.*','payroll-slips.*','bonuses.*','appreciation.*','reimbursements.*');
+                $inB2b       = request()->routeIs('project-plan.*','projects.*','clients.*','b2b.*','quotations.*','invoices.*','bank-accounts.*');
+                $inKontrak   = request()->routeIs('kontrak-kerja.*','contract-documents.*');
+                $inKomunikasi= request()->routeIs('announcements.*');
+                $inAdmin     = request()->routeIs('master-data.*','cms.*','users.*');
+            @endphp
+
             <li class="nav-item">
                 <a href="{{ route('dashboard') }}" class="{{ request()->routeIs('dashboard') ? 'active' : '' }}">
                     <i class="bi bi-speedometer2"></i> Dashboard
                 </a>
             </li>
-            <li class="nav-item">
-                <a href="{{ route('companies.index') }}" class="{{ request()->routeIs('companies.*') ? 'active' : '' }}">
-                    <i class="bi bi-building"></i> Perusahaan
-                </a>
+
+            {{-- SDM --}}
+            <li>
+                <div class="nav-group-header {{ $inSdm ? '' : 'collapsed' }}" data-group="sdm">
+                    <span class="nav-group-label">SDM</span>
+                    <i class="bi bi-chevron-down nav-group-arrow"></i>
+                </div>
+                <div class="nav-group-items {{ $inSdm ? '' : 'collapsed' }}" id="ng-sdm">
+                    <li class="nav-item">
+                        <a href="{{ route('companies.index') }}" class="{{ request()->routeIs('companies.*') ? 'active' : '' }}">
+                            <i class="bi bi-building"></i> Perusahaan
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('employees.index') }}" class="{{ request()->routeIs('employees.*') ? 'active' : '' }}">
+                            <i class="bi bi-people-fill"></i> Karyawan
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('calendar.index') }}" class="{{ request()->routeIs('calendar.*') ? 'active' : '' }}">
+                            <i class="bi bi-calendar3"></i> Kalender Libur
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('leaves.index') }}" class="{{ request()->routeIs('leaves.*') ? 'active' : '' }}">
+                            <i class="bi bi-calendar-check"></i> Cuti Karyawan
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('overtime.index') }}" class="{{ request()->routeIs('overtime.*') ? 'active' : '' }}">
+                            @php $pendingOT = \App\Models\OvertimeRequest::where('status','pending')->count(); @endphp
+                            <i class="bi bi-clock-history"></i> Lembur
+                            @if($pendingOT > 0)<span class="badge bg-warning text-dark rounded-pill ms-auto" style="font-size:.65rem">{{ $pendingOT }}</span>@endif
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('internal-requests.index') }}" class="{{ request()->routeIs('internal-requests.*') ? 'active' : '' }}">
+                            @php $pendingCount = \App\Models\InternalRequest::where('status','pending')->count(); @endphp
+                            <i class="bi bi-inbox"></i> Permohonan
+                            @if($pendingCount > 0)<span class="badge bg-danger rounded-pill ms-auto">{{ $pendingCount }}</span>@endif
+                        </a>
+                    </li>
+                </div>
             </li>
-            <li class="nav-item">
-                <a href="{{ route('employees.index') }}" class="{{ request()->routeIs('employees.*') ? 'active' : '' }}">
-                    <i class="bi bi-people-fill"></i> Karyawan
-                </a>
+
+            {{-- Payroll & Keuangan --}}
+            <li>
+                <div class="nav-group-header {{ $inPayroll ? '' : 'collapsed' }}" data-group="payroll">
+                    <span class="nav-group-label">Payroll &amp; Keuangan</span>
+                    <i class="bi bi-chevron-down nav-group-arrow"></i>
+                </div>
+                <div class="nav-group-items {{ $inPayroll ? '' : 'collapsed' }}" id="ng-payroll">
+                    <li class="nav-item">
+                        <a href="{{ route('payroll-info.index') }}" class="{{ request()->routeIs('payroll-info.*') ? 'active' : '' }}">
+                            <i class="bi bi-cash-coin"></i> Info Penggajian
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('payroll-slips.index') }}" class="{{ request()->routeIs('payroll-slips.*') ? 'active' : '' }}">
+                            <i class="bi bi-receipt-cutoff"></i> Slip Gaji
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('bonuses.index') }}" class="{{ request()->routeIs('bonuses.*') ? 'active' : '' }}">
+                            <i class="bi bi-gift"></i> Bonus
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('appreciation.index') }}" class="{{ request()->routeIs('appreciation.*') ? 'active' : '' }}">
+                            <i class="bi bi-stars"></i> Apresiasi
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('reimbursements.index') }}" class="{{ request()->routeIs('reimbursements.*') ? 'active' : '' }}">
+                            <i class="bi bi-receipt"></i> Reimbursement
+                        </a>
+                    </li>
+                </div>
             </li>
-            <li style="padding:.75rem 1.25rem .25rem"><div class="nav-section" style="padding:0">Penggajian</div></li>
-            <li class="nav-item">
-                <a href="{{ route('payroll-info.index') }}" class="{{ request()->routeIs('payroll-info.*') ? 'active' : '' }}">
-                    <i class="bi bi-cash-coin"></i> Info Penggajian
-                </a>
+
+            {{-- Project & B2B --}}
+            <li>
+                <div class="nav-group-header {{ $inB2b ? '' : 'collapsed' }}" data-group="b2b">
+                    <span class="nav-group-label">Project &amp; B2B</span>
+                    <i class="bi bi-chevron-down nav-group-arrow"></i>
+                </div>
+                <div class="nav-group-items {{ $inB2b ? '' : 'collapsed' }}" id="ng-b2b">
+                    <li class="nav-item">
+                        <a href="{{ route('project-plan.index') }}" class="{{ request()->routeIs('project-plan.*') ? 'active' : '' }}">
+                            <i class="bi bi-layout-text-sidebar-reverse"></i> Project Plan
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('projects.index') }}" class="{{ request()->routeIs('projects.*') ? 'active' : '' }}">
+                            <i class="bi bi-kanban"></i> Project
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('clients.index') }}" class="{{ request()->routeIs('clients.*') ? 'active' : '' }}">
+                            <i class="bi bi-briefcase"></i> Klien
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('b2b.dashboard') }}" class="{{ request()->routeIs('b2b.*') ? 'active' : '' }}">
+                            <i class="bi bi-speedometer2"></i> Dashboard B2B
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('quotations.index') }}" class="{{ request()->routeIs('quotations.*') ? 'active' : '' }}">
+                            <i class="bi bi-file-earmark-text"></i> Quotation
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('invoices.index') }}" class="{{ request()->routeIs('invoices.*') ? 'active' : '' }}">
+                            @php $invOverdue = \App\Models\Invoice::where('status','overdue')->count(); @endphp
+                            <i class="bi bi-file-earmark-spreadsheet"></i> Invoice
+                            @if($invOverdue > 0)<span class="badge bg-danger rounded-pill ms-auto">{{ $invOverdue }}</span>@endif
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('bank-accounts.index') }}" class="{{ request()->routeIs('bank-accounts.*') ? 'active' : '' }}">
+                            <i class="bi bi-bank"></i> Rekening Bank
+                        </a>
+                    </li>
+                </div>
             </li>
-            <li class="nav-item">
-                <a href="{{ route('payroll-slips.index') }}" class="{{ request()->routeIs('payroll-slips.*') ? 'active' : '' }}">
-                    <i class="bi bi-receipt-cutoff"></i> Slip Gaji
-                </a>
+
+            {{-- Kontrak & Dokumen --}}
+            <li>
+                <div class="nav-group-header {{ $inKontrak ? '' : 'collapsed' }}" data-group="kontrak">
+                    <span class="nav-group-label">Kontrak &amp; Dokumen</span>
+                    <i class="bi bi-chevron-down nav-group-arrow"></i>
+                </div>
+                <div class="nav-group-items {{ $inKontrak ? '' : 'collapsed' }}" id="ng-kontrak">
+                    <li class="nav-item">
+                        <a href="{{ route('kontrak-kerja.index') }}" class="{{ request()->routeIs('kontrak-kerja.*') ? 'active' : '' }}">
+                            <i class="bi bi-file-earmark-person"></i> Kontrak Kerja
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('contract-documents.index') }}" class="{{ request()->routeIs('contract-documents.*') ? 'active' : '' }}">
+                            <i class="bi bi-folder2-open"></i> Dokumen Kontrak
+                        </a>
+                    </li>
+                </div>
             </li>
-            <li class="nav-item">
-                <a href="{{ route('overtime.index') }}" class="{{ request()->routeIs('overtime.*') ? 'active' : '' }}">
-                    @php $pendingOT = \App\Models\OvertimeRequest::where('status','pending')->count(); @endphp
-                    <i class="bi bi-clock-history"></i> Pengajuan Lembur
-                    @if($pendingOT > 0)
-                        <span class="badge bg-warning text-dark rounded-pill ms-auto" style="font-size:.65rem">{{ $pendingOT }}</span>
+
+            {{-- Komunikasi --}}
+            <li>
+                <div class="nav-group-header {{ $inKomunikasi ? '' : 'collapsed' }}" data-group="komunikasi">
+                    <span class="nav-group-label">Komunikasi</span>
+                    <i class="bi bi-chevron-down nav-group-arrow"></i>
+                </div>
+                <div class="nav-group-items {{ $inKomunikasi ? '' : 'collapsed' }}" id="ng-komunikasi">
+                    <li class="nav-item">
+                        <a href="{{ route('announcements.index') }}" class="{{ request()->routeIs('announcements.*') ? 'active' : '' }}">
+                            <i class="bi bi-megaphone"></i> Pengumuman
+                        </a>
+                    </li>
+                </div>
+            </li>
+
+            {{-- Administrasi --}}
+            <li>
+                <div class="nav-group-header {{ $inAdmin ? '' : 'collapsed' }}" data-group="admin">
+                    <span class="nav-group-label">Administrasi</span>
+                    <i class="bi bi-chevron-down nav-group-arrow"></i>
+                </div>
+                <div class="nav-group-items {{ $inAdmin ? '' : 'collapsed' }}" id="ng-admin">
+                    <li class="nav-item">
+                        <a href="{{ route('master-data.index') }}" class="{{ request()->routeIs('master-data.*') ? 'active' : '' }}">
+                            <i class="bi bi-list-ul"></i> Data Master
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('cms.index') }}" class="{{ request()->routeIs('cms.*') ? 'active' : '' }}">
+                            <i class="bi bi-palette"></i> CMS &amp; Pengaturan
+                        </a>
+                    </li>
+                    @if(auth()->user()->canManageUsers())
+                    <li class="nav-item">
+                        <a href="{{ route('users.index') }}" class="{{ request()->routeIs('users.*') ? 'active' : '' }}">
+                            <i class="bi bi-shield-lock"></i> Kelola Pengguna
+                        </a>
+                    </li>
                     @endif
-                </a>
+                </div>
             </li>
-            <li style="padding:.75rem 1.25rem .25rem"><div class="nav-section" style="padding:0">Bonus &amp; Apresiasi</div></li>
-            <li class="nav-item">
-                <a href="{{ route('bonuses.index') }}" class="{{ request()->routeIs('bonuses.*') ? 'active' : '' }}">
-                    <i class="bi bi-gift"></i> Bonus Karyawan
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="{{ route('appreciation.index') }}" class="{{ request()->routeIs('appreciation.*') ? 'active' : '' }}">
-                    <i class="bi bi-stars"></i> Uang Apresiasi
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="{{ route('reimbursements.index') }}" class="{{ request()->routeIs('reimbursements.*') ? 'active' : '' }}">
-                    <i class="bi bi-receipt"></i> Reimbursement
-                </a>
-            </li>
-            <li style="padding:.75rem 1.25rem .25rem"><div class="nav-section" style="padding:0">Bisnis B2B</div></li>
-            <li class="nav-item">
-                <a href="{{ route('b2b.dashboard') }}" class="{{ request()->routeIs('b2b.*') ? 'active' : '' }}">
-                    <i class="bi bi-speedometer2"></i> Dashboard B2B
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="{{ route('clients.index') }}" class="{{ request()->routeIs('clients.*') ? 'active' : '' }}">
-                    <i class="bi bi-briefcase"></i> Klien
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="{{ route('projects.index') }}" class="{{ request()->routeIs('projects.*') ? 'active' : '' }}">
-                    <i class="bi bi-kanban"></i> Project
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="{{ route('quotations.index') }}" class="{{ request()->routeIs('quotations.*') ? 'active' : '' }}">
-                    <i class="bi bi-file-earmark-text"></i> Quotation
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="{{ route('invoices.index') }}" class="{{ request()->routeIs('invoices.*') ? 'active' : '' }}">
-                    @php $invOverdue = \App\Models\Invoice::where('status','overdue')->count(); @endphp
-                    <i class="bi bi-file-earmark-spreadsheet"></i> Invoice
-                    @if($invOverdue > 0)
-                        <span class="badge bg-danger rounded-pill ms-auto">{{ $invOverdue }}</span>
-                    @endif
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="{{ route('bank-accounts.index') }}" class="{{ request()->routeIs('bank-accounts.*') ? 'active' : '' }}">
-                    <i class="bi bi-bank"></i> Rekening Bank
-                </a>
-            </li>
-            <li style="padding:.75rem 1.25rem .25rem"><div class="nav-section" style="padding:0">SDM &amp; Komunikasi</div></li>
-            <li class="nav-item">
-                <a href="{{ route('calendar.index') }}" class="{{ request()->routeIs('calendar.*') ? 'active' : '' }}">
-                    <i class="bi bi-calendar3"></i> Kalender Libur
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="{{ route('leaves.index') }}" class="{{ request()->routeIs('leaves.*') ? 'active' : '' }}">
-                    <i class="bi bi-calendar-check"></i> Cuti Karyawan
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="{{ route('announcements.index') }}" class="{{ request()->routeIs('announcements.*') ? 'active' : '' }}">
-                    <i class="bi bi-megaphone"></i> Pengumuman
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="{{ route('internal-requests.index') }}" class="{{ request()->routeIs('internal-requests.*') ? 'active' : '' }}">
-                    @php $pendingCount = \App\Models\InternalRequest::where('status','pending')->count(); @endphp
-                    <i class="bi bi-inbox"></i> Permohonan Karyawan
-                    @if($pendingCount > 0)
-                        <span class="badge bg-danger rounded-pill ms-auto">{{ $pendingCount }}</span>
-                    @endif
-                </a>
-            </li>
-            <li style="padding:.75rem 1.25rem .25rem"><div class="nav-section" style="padding:0">Administrasi</div></li>
-            <li class="nav-item">
-                <a href="{{ route('master-data.index') }}" class="{{ request()->routeIs('master-data.*') ? 'active' : '' }}">
-                    <i class="bi bi-list-ul"></i> Data Master
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="{{ route('cms.index') }}" class="{{ request()->routeIs('cms.*') ? 'active' : '' }}">
-                    <i class="bi bi-palette"></i> CMS
-                </a>
-            </li>
-            @if(auth()->user()->canManageUsers())
-            <li class="nav-item">
-                <a href="{{ route('users.index') }}" class="{{ request()->routeIs('users.*') ? 'active' : '' }}">
-                    <i class="bi bi-shield-lock"></i> Kelola Pengguna
-                </a>
-            </li>
-            @endif
         @endif
         @endauth
     </ul>
@@ -626,6 +758,46 @@ function toggleSidebar() {
     document.getElementById('sidebar').classList.toggle('show');
     document.getElementById('sidebar-overlay').classList.toggle('show');
 }
+
+// ── Collapsible sidebar groups ────────────────────────────────
+(function () {
+    var STORAGE_KEY = 'sidebar_collapsed_groups';
+
+    function loadState() {
+        try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); }
+        catch (e) { return {}; }
+    }
+
+    function saveState(state) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    document.querySelectorAll('.nav-group-header').forEach(function (header) {
+        var group = header.dataset.group;
+        var items = document.getElementById('ng-' + group);
+        if (!items) return;
+
+        header.addEventListener('click', function () {
+            var isCollapsed = header.classList.toggle('collapsed');
+            items.classList.toggle('collapsed', isCollapsed);
+            var state = loadState();
+            state[group] = isCollapsed;
+            saveState(state);
+        });
+
+        // On page load: restore saved state BUT only if group isn't active
+        // (active group always stays open regardless of saved state)
+        var state = loadState();
+        if (state[group] === true && !header.classList.contains('collapsed') === false) {
+            // already collapsed via blade rendering, keep it
+        }
+        // If saved as open but blade rendered it closed (non-active), respect localStorage
+        if (state[group] === false && header.classList.contains('collapsed')) {
+            header.classList.remove('collapsed');
+            items.classList.remove('collapsed');
+        }
+    });
+})();
 </script>
 @stack('scripts')
 </body>

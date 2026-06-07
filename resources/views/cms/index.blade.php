@@ -34,6 +34,15 @@
             <span class="badge bg-light text-dark ms-1">{{ $companies->count() }}</span>
         </button>
     </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="tab-contract-template" data-bs-toggle="tab" data-bs-target="#pane-contract-template" type="button">
+            <i class="bi bi-file-earmark-text me-1"></i> Template Kontrak
+        </button></li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="tab-repo" data-bs-toggle="tab" data-bs-target="#pane-repo" type="button">
+            <i class="bi bi-github me-1"></i> Integrasi Repo
+        </button>
+    </li>
 </ul>
 
 <div class="tab-content">
@@ -183,5 +192,245 @@
             </div>
         </div>
     </div>
+
+    {{-- ── Contract Template Tab ── --}}
+    <div class="tab-pane fade" id="pane-contract-template" role="tabpanel">
+        <div class="card">
+            <div class="card-body">
+                <div class="alert alert-info py-2" style="font-size:.82rem">
+                    Template ini digunakan saat tombol <strong>Isi Contoh Otomatis</strong> di menu Dokumen Kontrak ditekan.
+                </div>
+
+                <form method="POST" action="{{ route('cms.contract-template.update') }}">
+                    @csrf
+
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Lokasi</label>
+                            <input type="text" name="location" class="form-control" value="{{ $contractTemplate['location'] ?? '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Nama Proyek / Pekerjaan</label>
+                            <input type="text" name="project_name" class="form-control" value="{{ $contractTemplate['project_name'] ?? '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Durasi Default</label>
+                            <input type="text" name="duration_text" class="form-control" value="{{ $contractTemplate['duration_text'] ?? '' }}" placeholder="contoh: 4 bulan">
+                        </div>
+
+                        <div class="col-12"><div class="border-top pt-3 mt-1"><h6 class="mb-0">Pihak Pertama & Kedua</h6></div></div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Nama Pihak Pertama</label>
+                            <input type="text" name="first_party_name" class="form-control" value="{{ $contractTemplate['first_party_name'] ?? '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Jabatan Pihak Pertama</label>
+                            <input type="text" name="first_party_position" class="form-control" value="{{ $contractTemplate['first_party_position'] ?? '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Perusahaan Pihak Pertama</label>
+                            <input type="text" name="first_party_company" class="form-control" value="{{ $contractTemplate['first_party_company'] ?? '' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Alamat Pihak Pertama</label>
+                            <textarea name="first_party_address" rows="3" class="form-control">{{ $contractTemplate['first_party_address'] ?? '' }}</textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Alamat Pihak Kedua</label>
+                            <textarea name="second_party_address" rows="3" class="form-control">{{ $contractTemplate['second_party_address'] ?? '' }}</textarea>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Nama Pihak Kedua</label>
+                            <input type="text" name="second_party_name" class="form-control" value="{{ $contractTemplate['second_party_name'] ?? '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">No KTP Pihak Kedua</label>
+                            <input type="text" name="second_party_ktp" class="form-control" value="{{ $contractTemplate['second_party_ktp'] ?? '' }}">
+                        </div>
+
+                        <div class="col-12"><div class="border-top pt-3 mt-1"><h6 class="mb-0">Isi Perjanjian</h6></div></div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold d-flex align-items-center gap-2">
+                                <span class="badge bg-primary bg-opacity-10 text-primary" style="font-size:.7rem;letter-spacing:.03em">Pasal 1</span>
+                                Ruang Lingkup Pekerjaan
+                            </label>
+                            <textarea name="scope_of_work" rows="5" class="form-control js-cms-contract-richtext">{{ $contractTemplate['scope_of_work'] ?? '' }}</textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold d-flex align-items-center gap-2">
+                                <span class="badge bg-primary bg-opacity-10 text-primary" style="font-size:.7rem;letter-spacing:.03em">Pasal 2</span>
+                                Hak &amp; Kewajiban Para Pihak
+                            </label>
+                            <textarea name="rights_obligations" rows="5" class="form-control js-cms-contract-richtext">{{ $contractTemplate['rights_obligations'] ?? '' }}</textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold d-flex align-items-center gap-2">
+                                <span class="badge bg-primary bg-opacity-10 text-primary" style="font-size:.7rem;letter-spacing:.03em">Pasal 3</span>
+                                Hak Kekayaan Intelektual (HKI)
+                            </label>
+                            <textarea name="hki_terms" rows="5" class="form-control js-cms-contract-richtext">{{ $contractTemplate['hki_terms'] ?? '' }}</textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold d-flex align-items-center gap-2">
+                                <span class="badge bg-primary bg-opacity-10 text-primary" style="font-size:.7rem;letter-spacing:.03em">Pasal 4</span>
+                                Kerahasiaan / NDA
+                            </label>
+                            <textarea name="nda_terms" rows="5" class="form-control js-cms-contract-richtext">{{ $contractTemplate['nda_terms'] ?? '' }}</textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold d-flex align-items-center gap-2">
+                                <span class="badge bg-primary bg-opacity-10 text-primary" style="font-size:.7rem;letter-spacing:.03em">Pasal 5</span>
+                                Berakhirnya Perintah Kerja &amp; Sanksi
+                            </label>
+                            <textarea name="sanctions_terms" rows="5" class="form-control js-cms-contract-richtext">{{ $contractTemplate['sanctions_terms'] ?? '' }}</textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold d-flex align-items-center gap-2">
+                                <span class="badge bg-primary bg-opacity-10 text-primary" style="font-size:.7rem;letter-spacing:.03em">Pasal 6</span>
+                                Penyelesaian Perselisihan
+                            </label>
+                            <textarea name="dispute_terms" rows="4" class="form-control js-cms-contract-richtext">{{ $contractTemplate['dispute_terms'] ?? '' }}</textarea>
+                        </div>
+
+                        <div class="col-12"><div class="border-top pt-3 mt-1"><h6 class="mb-0">Pembayaran</h6></div></div>
+                        <div class="col-md-3">
+                            <label class="form-label small fw-semibold">Metode Pembayaran</label>
+                            <input type="text" name="payment_method" class="form-control" value="{{ $contractTemplate['payment_method'] ?? '' }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small fw-semibold">Nilai Kontrak</label>
+                            <input type="text" name="contract_value" class="form-control" value="{{ $contractTemplate['contract_value'] ?? '' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Nilai Kontrak (terbilang)</label>
+                            <input type="text" name="contract_value_text" class="form-control" value="{{ $contractTemplate['contract_value_text'] ?? '' }}">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-semibold d-flex align-items-center gap-2">
+                                <span class="badge bg-warning bg-opacity-10 text-warning" style="font-size:.7rem;letter-spacing:.03em">Lampiran</span>
+                                Rincian / Termin Pembayaran
+                            </label>
+                            <textarea name="payment_terms" rows="4" class="form-control js-cms-contract-richtext">{{ $contractTemplate['payment_terms'] ?? '' }}</textarea>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Nama Bank</label>
+                            <input type="text" name="bank_name" class="form-control" value="{{ $contractTemplate['bank_name'] ?? '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">No Rekening</label>
+                            <input type="text" name="bank_account" class="form-control" value="{{ $contractTemplate['bank_account'] ?? '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Atas Nama</label>
+                            <input type="text" name="bank_account_name" class="form-control" value="{{ $contractTemplate['bank_account_name'] ?? '' }}">
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label small fw-semibold">Catatan Penutup</label>
+                            <textarea name="notes" rows="4" class="form-control js-cms-contract-richtext">{{ $contractTemplate['notes'] ?? '' }}</textarea>
+                        </div>
+
+                        <div class="col-12 d-flex justify-content-end">
+                            <button type="submit" class="btn btn-primary btn-sm">
+                                <i class="bi bi-save me-1"></i> Simpan Template Kontrak
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {{-- Tab: Integrasi Repo --}}
+    <div class="tab-pane fade" id="pane-repo" role="tabpanel">
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title"><i class="bi bi-github me-2 text-primary"></i>Token Akses GitHub &amp; GitLab</span>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info py-2 mb-4" style="font-size:.82rem">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Token digunakan untuk membaca data kontributor dari repository project. Token disimpan terenkripsi dan hanya digunakan untuk membaca data (<code>read:user</code>, <code>repo:read</code>). Biarkan kosong jika repo bersifat publik.
+                </div>
+                <form method="POST" action="{{ route('cms.repo-tokens.update') }}">
+                    @csrf
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold"><i class="bi bi-github me-1"></i> GitHub Personal Access Token</label>
+                            <input type="password" name="github_token" class="form-control"
+                                value="{{ $githubToken ? str_repeat('•', 20) : '' }}"
+                                placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+                                autocomplete="off">
+                            <div class="form-text" style="font-size:.75rem">
+                                Buat di: <a href="https://github.com/settings/tokens" target="_blank">github.com/settings/tokens</a> — scope: <code>read:user</code>, <code>repo</code>
+                                @if($githubToken)<span class="badge bg-success bg-opacity-10 text-success ms-2">Token tersimpan</span>@endif
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold"><i class="bi bi-gitlab me-1"></i> GitLab Personal Access Token</label>
+                            <input type="password" name="gitlab_token" class="form-control"
+                                value="{{ $gitlabToken ? str_repeat('•', 20) : '' }}"
+                                placeholder="glpat-xxxxxxxxxxxxxxxxxxxx"
+                                autocomplete="off">
+                            <div class="form-text" style="font-size:.75rem">
+                                Buat di: <a href="https://gitlab.com/-/user_settings/personal_access_tokens" target="_blank">gitlab.com/-/user_settings/personal_access_tokens</a> — scope: <code>read_api</code>
+                                @if($gitlabToken)<span class="badge bg-success bg-opacity-10 text-success ms-2">Token tersimpan</span>@endif
+                            </div>
+                        </div>
+                        <div class="col-12 d-flex gap-2 justify-content-end">
+                            <button type="submit" class="btn btn-primary btn-sm">
+                                <i class="bi bi-save me-1"></i> Simpan Token
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
 </div>
 @endsection
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/tinymce@7/tinymce.min.js" referrerpolicy="origin"></script>
+<script>
+(function () {
+    const templateForm = document.querySelector('form[action*="cms/contract-template"]');
+
+    if (window.tinymce) {
+        tinymce.init({
+            selector: 'textarea.js-cms-contract-richtext',
+            menubar: false,
+            min_height: 220,
+            plugins: 'lists link table code autolink help wordcount',
+            toolbar: 'undo redo | blocks | bold italic underline | bullist numlist | alignleft aligncenter alignright | link table | removeformat code',
+            branding: false,
+            promotion: false,
+            statusbar: true,
+            content_style: 'body { font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6; }',
+            setup: function (editor) {
+                editor.on('change keyup setcontent', function () {
+                    editor.save();
+                });
+            }
+        });
+    }
+
+    if (templateForm) {
+        templateForm.addEventListener('submit', function () {
+            if (window.tinymce) {
+                tinymce.triggerSave();
+            }
+        });
+    }
+
+    const hash = window.location.hash;
+    if (!hash) return;
+
+    const trigger = document.querySelector(`[data-bs-target="${hash}"]`);
+    if (!trigger || !window.bootstrap || !bootstrap.Tab) return;
+
+    bootstrap.Tab.getOrCreateInstance(trigger).show();
+})();
+</script>
+@endpush

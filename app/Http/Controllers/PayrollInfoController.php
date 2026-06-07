@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Company;
 use App\Models\Employee;
+use App\Models\EmployeeDocument;
 use App\Models\PayrollItem;
 use App\Models\PayrollSlip;
 use Carbon\Carbon;
@@ -16,6 +17,25 @@ class PayrollInfoController extends Controller
     const PAYROLL_DAY = 25;
 
     public function index(Request $request)
+    {
+        return view('payroll-info.index', $this->buildPayrollContext($request, 'Informasi Penggajian'));
+    }
+
+    public function contractIndex(Request $request)
+    {
+        return view('kontrak-kerja.index', $this->buildPayrollContext($request, 'Kontrak Kerja'));
+    }
+
+    public function contractShow(Employee $employee)
+    {
+        $employee->load(['company', 'documents.uploader']);
+        $documentTypes = EmployeeDocument::contractTypeOptions();
+        $documentsByType = $employee->documents->groupBy('document_type');
+
+        return view('kontrak-kerja.show', compact('employee', 'documentTypes', 'documentsByType'));
+    }
+
+    private function buildPayrollContext(Request $request, string $pageTitle): array
     {
         $today = now()->startOfDay();
         $day   = self::PAYROLL_DAY;
@@ -80,13 +100,13 @@ class PayrollInfoController extends Controller
             ->where('base_salary', '>', 0)
             ->count();
 
-        return view('payroll-info.index', compact(
+        return compact(
             'employees', 'nextPayroll', 'prevPayroll',
             'daysUntil', 'companies', 'today',
             'allActive', 'expiredCount', 'expiringCount',
             'paidIds', 'periodMonth', 'periodYear',
-            'paidCount', 'unpaidCount'
-        ));
+            'paidCount', 'unpaidCount', 'pageTitle'
+        );
     }
 
     /** Transfer payroll for ONE employee → auto-generate published slip + proof. */

@@ -10,35 +10,38 @@ use Illuminate\Support\Facades\Storage;
 class EmployeeDocumentController extends Controller
 {
     /**
-     * Store a newly uploaded document for an employee.
+     * Store a newly uploaded document for an employee (file or link).
      */
     public function store(Request $request, Employee $employee)
     {
+        $entryType = $request->input('entry_type', 'file'); // 'file' or 'link'
+
         $request->validate([
             'document_type' => 'required|string|in:' . implode(',', array_keys(EmployeeDocument::typeOptions())),
             'label'         => 'required|string|max:255',
-            'file'          => 'required|file|max:10240|mimes:pdf,jpg,jpeg,png,webp,doc,docx,xls,xlsx',
+            'file'          => $entryType === 'file' ? 'required|file|max:10240|mimes:pdf,jpg,jpeg,png,webp,doc,docx,xls,xlsx' : 'nullable',
+            'url'           => $entryType === 'link' ? 'required|url|max:500' : 'nullable|url|max:500',
         ]);
 
-        $file          = $request->file('file');
-        $originalName  = $file->getClientOriginalName();
-        $mimeType      = $file->getMimeType();
-        $fileSize      = $file->getSize();
-
-        // Store privately — not publicly accessible, served through controller
-        $path = $file->store('employee-documents/' . $employee->id, 'private');
-
-        $employee->documents()->create([
+        $data = [
             'uploaded_by'   => auth()->id(),
             'document_type' => $request->document_type,
             'label'         => $request->label,
-            'file_path'     => $path,
-            'original_name' => $originalName,
-            'mime_type'     => $mimeType,
-            'file_size'     => $fileSize,
-        ]);
+        ];
 
-        return back()->with('success', 'Dokumen "' . $request->label . '" berhasil diunggah.');
+        if ($entryType === 'link') {
+            $data['url'] = $request->url;
+        } else {
+            $file = $request->file('file');
+            $data['file_path']    = $file->store('employee-documents/' . $employee->id, 'private');
+            $data['original_name'] = $file->getClientOriginalName();
+            $data['mime_type']    = $file->getMimeType();
+            $data['file_size']    = $file->getSize();
+        }
+
+        $employee->documents()->create($data);
+
+        return back()->with('success', 'Dokumen "' . $request->label . '" berhasil ditambahkan.');
     }
 
     /**

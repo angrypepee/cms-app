@@ -64,12 +64,12 @@
                             @error('employee_category')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-medium">Gaji Pokok <span class="text-danger">*</span></label>
+                            <label class="form-label fw-medium">Gaji Pokok</label>
                             <div class="input-group">
-                                <span class="input-group-text">Rp</span>
-                                <input type="number" name="base_salary" class="form-control @error('base_salary') is-invalid @enderror" value="{{ old('base_salary', 0) }}" min="0" step="1000" required>
-                                @error('base_salary')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                <span class="input-group-text"><i class="bi bi-lock-fill text-muted"></i></span>
+                                <input type="text" class="form-control bg-light text-muted" value="Diatur dari Kontrak Kerja" readonly disabled>
                             </div>
+                            <div class="form-text" style="font-size:.72rem"><i class="bi bi-info-circle me-1"></i>Setelah karyawan dibuat, buat Kontrak Kerja untuk mengatur gaji.</div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-medium">Email</label>

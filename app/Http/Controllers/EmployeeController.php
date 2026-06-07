@@ -81,6 +81,10 @@ class EmployeeController extends Controller
             'salary_components.*.label'      => 'nullable|string|max:100',
             'salary_components.*.type'       => 'nullable|in:income,deduction',
             'salary_components.*.amount'     => 'nullable|numeric|min:0',
+            'github_url'             => 'nullable|url|max:255',
+            'gitlab_url'             => 'nullable|url|max:255',
+            'linkedin_url'           => 'nullable|url|max:255',
+            'portfolio_url'          => 'nullable|url|max:255',
         ]);
 
         $validated['is_active'] = $request->boolean('is_active', true);
@@ -95,20 +99,29 @@ class EmployeeController extends Controller
     {
         $employee->load(
             'company', 'payrollSlips', 'documents.uploader', 'user',
+            'contractDocuments.creator',
             'appreciationBudgets.claims',
-            'reimbursements.approver'
+            'reimbursements.approver',
+            'projects.client',
+            'portfolios.uploader'
         );
         return view('employees.show', compact('employee'));
     }
 
     public function edit(Employee $employee)
     {
-        $employee->load('user');
+        $employee->load('user', 'documents', 'portfolios.uploader');
+        $mainContractDocument = $employee->contractDocuments()
+            ->with('signer')
+            ->orderByDesc('contract_date')
+            ->orderByDesc('start_date')
+            ->orderByDesc('id')
+            ->first();
         $companies   = Company::orderBy('name')->get();
         $categories  = EmployeeCategory::cases();
         $positions   = Position::where('is_active', true)->orderBy('name')->get();
         $departments = Department::where('is_active', true)->orderBy('name')->get();
-        return view('employees.edit', compact('employee', 'companies', 'categories', 'positions', 'departments'));
+        return view('employees.edit', compact('employee', 'companies', 'categories', 'positions', 'departments', 'mainContractDocument'));
     }
 
     public function update(Request $request, Employee $employee)
@@ -125,17 +138,20 @@ class EmployeeController extends Controller
             'bpjs_kesehatan'         => 'nullable|string|max:50',
             'bpjs_ketenagakerjaan'   => 'nullable|string|max:50',
             'employee_category'      => 'required|string|in:' . implode(',', array_column(EmployeeCategory::cases(), 'value')),
-            'contract_start'         => 'nullable|date',
-            'contract_end'           => 'nullable|date|after_or_equal:contract_start',
             'base_salary'            => 'nullable|numeric|min:0',
             'salary_components'              => 'nullable|array',
             'salary_components.*.label'      => 'nullable|string|max:100',
             'salary_components.*.type'       => 'nullable|in:income,deduction',
             'salary_components.*.amount'     => 'nullable|numeric|min:0',
+            'github_url'             => 'nullable|url|max:255',
+            'gitlab_url'             => 'nullable|url|max:255',
+            'linkedin_url'           => 'nullable|url|max:255',
+            'portfolio_url'          => 'nullable|url|max:255',
         ]);
 
         $validated['is_active'] = $request->boolean('is_active');
         $validated['salary_components'] = $this->normalizeSalaryComponents($validated['salary_components'] ?? []);
+        $this->syncContractDatesFromMainDocument($employee, $validated);
 
         $employee->update($validated);
         return redirect()->route('employees.index')->with('success', 'Data karyawan berhasil diperbarui.');
@@ -173,5 +189,21 @@ class EmployeeController extends Controller
             $out[] = ['label' => $label, 'type' => $type, 'amount' => $amount];
         }
         return $out;
+    }
+
+    private function syncContractDatesFromMainDocument(Employee $employee, array &$validated): void
+    {
+        $mainContract = $employee->contractDocuments()
+            ->orderByDesc('contract_date')
+            ->orderByDesc('start_date')
+            ->orderByDesc('id')
+            ->first();
+
+        if (!$mainContract) {
+            return;
+        }
+
+        $validated['contract_start'] = $mainContract->start_date?->toDateString();
+        $validated['contract_end'] = $mainContract->end_date?->toDateString();
     }
 }

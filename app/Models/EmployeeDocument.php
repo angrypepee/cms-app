@@ -8,7 +8,7 @@ class EmployeeDocument extends Model
 {
     protected $fillable = [
         'employee_id', 'uploaded_by', 'document_type',
-        'label', 'file_path', 'original_name', 'mime_type', 'file_size',
+        'label', 'file_path', 'original_name', 'mime_type', 'file_size', 'url',
     ];
 
     // ── Relationships ────────────────────────────────────────
@@ -50,9 +50,36 @@ class EmployeeDocument extends Model
     {
         return [
             'ktp'          => 'KTP / Identitas',
-            'kontrak'      => 'Kontrak Kerja',
             'npwp'         => 'NPWP',
             'ijazah'       => 'Ijazah / Sertifikat Pendidikan',
+            'rekening'     => 'Rekening / Buku Tabungan',
+            'syarat'       => 'Syarat Administrasi',
+            'sertifikasi'  => 'Sertifikasi Profesi',
+            'bpjs'         => 'Kartu BPJS',
+            'lainnya'      => 'Lainnya',
+        ];
+    }
+
+    public static function contractTypeOptions(): array
+    {
+        return [
+            'ktp'      => 'KTP / Identitas',
+            'npwp'     => 'NPWP',
+            'ijazah'   => 'Ijazah / Sertifikat Pendidikan',
+            'rekening' => 'Rekening / Buku Tabungan',
+            'syarat'   => 'Syarat Administrasi',
+        ];
+    }
+
+    public static function allTypeLabels(): array
+    {
+        return [
+            'kontrak'      => 'Surat Kontrak Kerja',
+            'ktp'          => 'KTP / Identitas',
+            'npwp'         => 'NPWP',
+            'ijazah'       => 'Ijazah / Sertifikat Pendidikan',
+            'rekening'     => 'Rekening / Buku Tabungan',
+            'syarat'       => 'Syarat Administrasi',
             'sertifikasi'  => 'Sertifikasi Profesi',
             'bpjs'         => 'Kartu BPJS',
             'lainnya'      => 'Lainnya',
@@ -61,7 +88,7 @@ class EmployeeDocument extends Model
 
     public function typeLabel(): string
     {
-        return self::typeOptions()[$this->document_type] ?? $this->document_type;
+        return self::allTypeLabels()[$this->document_type] ?? $this->document_type;
     }
 
     public function typeIcon(): string
@@ -71,6 +98,8 @@ class EmployeeDocument extends Model
             'kontrak'     => 'bi-file-earmark-text',
             'npwp'        => 'bi-receipt',
             'ijazah'      => 'bi-mortarboard',
+            'rekening'    => 'bi-bank',
+            'syarat'      => 'bi-check2-square',
             'sertifikasi' => 'bi-award',
             'bpjs'        => 'bi-heart-pulse',
             default       => 'bi-file-earmark',

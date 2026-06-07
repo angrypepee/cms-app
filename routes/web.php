@@ -22,10 +22,12 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\OvertimeRequestController;
 use App\Http\Controllers\PayrollInfoController;
+use App\Http\Controllers\ContractDocumentController;
 use App\Http\Controllers\MasterDataController;
 use App\Http\Controllers\CmsController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\ProjectPlanController;
 use App\Http\Controllers\QuotationController;
 use App\Http\Controllers\InvoiceController;
 
@@ -57,6 +59,8 @@ Route::middleware('auth')->group(function () {
 
     // ── Employee portal (self-service) ─────────────────────
     Route::get('/my',                [EmployeePortalController::class, 'dashboard'])->name('my.dashboard');
+    Route::get('/my/profile',        [EmployeePortalController::class, 'myProfile'])->name('my.profile');
+    Route::patch('/my/profile',      [EmployeePortalController::class, 'updateProfile'])->name('my.profile.update');
     Route::get('/my/slips',          [EmployeePortalController::class, 'slips'])->name('my.slips');
     Route::get('/my/slips/{payrollSlip}', [EmployeePortalController::class, 'showSlip'])->name('my.slips.show');
     Route::post('/my/slips/{payrollSlip}/sign', [EmployeePortalController::class, 'signSlip'])->name('my.slips.sign');
@@ -104,6 +108,11 @@ Route::middleware('auth')->group(function () {
     // ── Overtime requests (employee portal) ────────────────
     Route::get('/my/overtime',      [OvertimeRequestController::class, 'myIndex'])->name('my.overtime');
     Route::post('/my/overtime',     [OvertimeRequestController::class, 'myStore'])->name('my.overtime.store');
+    Route::get('/my/projects',      [EmployeePortalController::class, 'myProjects'])->name('my.projects');
+    Route::patch('/my/projects/{project}/work-status', [EmployeePortalController::class, 'updateWorkStatus'])->name('my.projects.work-status');
+    Route::get('/my/contracts',      [EmployeePortalController::class, 'myContracts'])->name('my.contracts');
+    Route::patch('/my/contracts/{contract}/sign',   [EmployeePortalController::class, 'signContractAsEmployee'])->name('my.contracts.sign');
+    Route::patch('/my/contracts/{contract}/reject', [EmployeePortalController::class, 'rejectContract'])->name('my.contracts.reject');
 
     // ── Staff-only routes (admin, HR, signature_admin) ─────
     Route::middleware('not-employee')->group(function () {
@@ -120,6 +129,15 @@ Route::middleware('auth')->group(function () {
         Route::patch('overtime/{overtimeRequest}/reject', [OvertimeRequestController::class, 'reject'])->name('overtime.reject');
 
         // ── Payroll information (admin/HR) ──────────────────────
+        Route::get('kontrak-kerja', [PayrollInfoController::class, 'contractIndex'])->name('kontrak-kerja.index');
+        Route::get('kontrak-kerja/{employee}', [PayrollInfoController::class, 'contractShow'])->name('kontrak-kerja.show');
+        Route::get('contract-documents/supporting-data/{employee}', [ContractDocumentController::class, 'supportingData'])->name('contract-documents.supporting-data');
+        Route::post('contract-documents/save-template', [ContractDocumentController::class, 'saveTemplateFromCreate'])->name('contract-documents.save-template');
+        Route::resource('contract-documents', ContractDocumentController::class);
+        Route::patch('contract-documents/{contractDocument}/sign', [ContractDocumentController::class, 'sign'])->name('contract-documents.sign');
+        Route::patch('contract-documents/{contractDocument}/unsign', [ContractDocumentController::class, 'unsign'])->name('contract-documents.unsign');
+        Route::patch('contract-documents/{contractDocument}/cancel', [ContractDocumentController::class, 'cancel'])->name('contract-documents.cancel');
+        Route::get('contract-documents/{contractDocument}/download', [ContractDocumentController::class, 'download'])->name('contract-documents.download');
         Route::get('payroll-info', [PayrollInfoController::class, 'index'])->name('payroll-info.index');
         Route::get('payroll-info/report', [PayrollInfoController::class, 'report'])->name('payroll-info.report');
         Route::post('payroll-info/transfer/{employee}', [PayrollInfoController::class, 'transfer'])->name('payroll-info.transfer');
@@ -134,6 +152,10 @@ Route::middleware('auth')->group(function () {
         Route::post('employees/{employee}/documents',               [EmployeeDocumentController::class, 'store'])->name('employee-documents.store');
         Route::get('employees/{employee}/documents/{document}',    [EmployeeDocumentController::class, 'show'])->name('employee-documents.show');
         Route::delete('employees/{employee}/documents/{document}', [EmployeeDocumentController::class, 'destroy'])->name('employee-documents.destroy');
+
+        Route::post('employees/{employee}/portfolios',                                        [\App\Http\Controllers\EmployeePortfolioController::class, 'store'])->name('employee-portfolios.store');
+        Route::get('employees/{employee}/portfolios/{portfolio}',                              [\App\Http\Controllers\EmployeePortfolioController::class, 'show'])->name('employee-portfolios.show');
+        Route::delete('employees/{employee}/portfolios/{portfolio}',                           [\App\Http\Controllers\EmployeePortfolioController::class, 'destroy'])->name('employee-portfolios.destroy');
 
         Route::get('payroll-slips/bulk-create',   [PayrollSlipController::class, 'bulkCreate'])->name('payroll-slips.bulk-create');
         Route::post('payroll-slips/bulk-store',   [PayrollSlipController::class, 'bulkStore'])->name('payroll-slips.bulk-store');
@@ -203,17 +225,34 @@ Route::middleware('auth')->group(function () {
         Route::post('master-data/departments',                [MasterDataController::class, 'storeDepartment'])->name('master-data.departments.store');
         Route::put('master-data/departments/{department}',    [MasterDataController::class, 'updateDepartment'])->name('master-data.departments.update');
         Route::delete('master-data/departments/{department}', [MasterDataController::class, 'destroyDepartment'])->name('master-data.departments.destroy');
+        Route::post('master-data/first-parties',                  [MasterDataController::class, 'storeFirstParty'])->name('master-data.first-parties.store');
+        Route::put('master-data/first-parties/{firstParty}',      [MasterDataController::class, 'updateFirstParty'])->name('master-data.first-parties.update');
+        Route::delete('master-data/first-parties/{firstParty}',   [MasterDataController::class, 'destroyFirstParty'])->name('master-data.first-parties.destroy');
 
         // ── CMS (Branding & Logo Perusahaan) ──
         Route::get('cms', [CmsController::class, 'index'])->name('cms.index');
         Route::post('cms/app-branding', [CmsController::class, 'updateAppBranding'])->name('cms.app-branding.update');
         Route::post('cms/companies/{company}/logo', [CmsController::class, 'updateCompanyLogo'])->name('cms.companies.logo.update');
+        Route::post('cms/contract-template', [CmsController::class, 'updateContractTemplate'])->name('cms.contract-template.update');
+        Route::post('cms/repo-tokens',        [CmsController::class, 'updateRepoTokens'])->name('cms.repo-tokens.update');
 
         // ── B2B Module ──
         Route::get('b2b', [\App\Http\Controllers\B2bDashboardController::class, 'index'])->name('b2b.dashboard');
 
         Route::resource('clients',  ClientController::class)->except(['create','edit']);
         Route::resource('projects', ProjectController::class);
+        Route::post('projects/{project}/links',               [\App\Http\Controllers\ProjectResourceController::class, 'storeLink'])->name('projects.links.store');
+        Route::delete('projects/{project}/links/{link}',      [\App\Http\Controllers\ProjectResourceController::class, 'destroyLink'])->name('projects.links.destroy');
+        Route::post('projects/{project}/files',               [\App\Http\Controllers\ProjectResourceController::class, 'storeFile'])->name('projects.files.store');
+        Route::get('projects/{project}/files/{file}',         [\App\Http\Controllers\ProjectResourceController::class, 'showFile'])->name('projects.files.show');
+        Route::delete('projects/{project}/files/{file}',      [\App\Http\Controllers\ProjectResourceController::class, 'destroyFile'])->name('projects.files.destroy');
+
+        // ── Project Plan ───────────────────────────────────────────
+        Route::get('project-plan',                                         [ProjectPlanController::class, 'index'])->name('project-plan.index');
+        Route::get('project-plan/{project}',                               [ProjectPlanController::class, 'show'])->name('project-plan.show');
+        Route::post('project-plan/{project}/members',                      [ProjectPlanController::class, 'addMember'])->name('project-plan.members.add');
+        Route::patch('project-plan/{project}/members/{employee}',          [ProjectPlanController::class, 'updateMember'])->name('project-plan.members.update');
+        Route::delete('project-plan/{project}/members/{employee}',         [ProjectPlanController::class, 'removeMember'])->name('project-plan.members.remove');
 
         Route::resource('quotations', QuotationController::class);
         Route::patch('quotations/{quotation}/status',     [QuotationController::class,'updateStatus'])->name('quotations.status');

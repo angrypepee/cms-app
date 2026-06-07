@@ -15,6 +15,7 @@ class Employee extends Model
         'employee_category', 'grade', 'bank_name', 'bank_account', 'npwp',
         'bpjs_kesehatan', 'bpjs_ketenagakerjaan', 'is_active',
         'contract_start', 'contract_end', 'base_salary', 'salary_components',
+        'github_url', 'gitlab_url', 'linkedin_url', 'portfolio_url',
     ];
 
     protected $casts = [
@@ -120,6 +121,21 @@ class Employee extends Model
     public function documents()
     {
         return $this->hasMany(\App\Models\EmployeeDocument::class)->latest();
+    }
+
+    public function contractDocuments()
+    {
+        return $this->hasMany(\App\Models\ContractDocument::class)->latest();
+    }
+
+    public function projects()
+    {
+        return $this->belongsToMany(Project::class, 'project_members')->withPivot('role','notes','joined_at')->withTimestamps();
+    }
+
+    public function portfolios()
+    {
+        return $this->hasMany(\App\Models\EmployeePortfolio::class)->latest();
     }
 
     public function reimbursements()

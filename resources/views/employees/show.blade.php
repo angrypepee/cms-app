@@ -3,30 +3,59 @@
 @section('page-title', $employee->name)
 @section('content')
 @php
-    $totalGaji          = $employee->payrollSlips->where('status','published')->sum('take_home_pay');
-    $totalApresiasi     = $employee->appreciationBudgets->flatMap(fn($b) => $b->claims)->where('status','approved')->sum('amount');
-    $totalReimbursement = $employee->reimbursements->where('status','approved')->sum('amount');
+    $isAdmin = auth()->user()->isAdmin();
+    $totalGaji          = $isAdmin ? $employee->payrollSlips->where('status','published')->sum('take_home_pay') : 0;
+    $totalApresiasi     = $isAdmin ? $employee->appreciationBudgets->flatMap(fn($b) => $b->claims)->where('status','approved')->sum('amount') : 0;
+    $totalReimbursement = $isAdmin ? $employee->reimbursements->where('status','approved')->sum('amount') : 0;
     $grandTotal         = $totalGaji + $totalApresiasi + $totalReimbursement;
+    $initials = collect(explode(' ', $employee->name))->take(2)->map(fn($w) => strtoupper($w[0] ?? ''))->implode('');
+    $colors   = ['#2563eb','#7c3aed','#0891b2','#16a34a','#d97706','#dc2626','#0d9488'];
+    $bgColor  = $colors[crc32($employee->employee_id) % count($colors)];
 @endphp
 <div class="row g-4">
     {{-- Profile Card --}}
     <div class="col-lg-4">
         <div class="card">
-            <div class="card-body p-4 text-center">
-                <div class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center mx-auto mb-3" style="width:80px;height:80px">
-                    <i class="bi bi-person-fill text-primary fs-2"></i>
+            {{-- Header gradient --}}
+            <div style="background:linear-gradient(135deg,#1e3a8a 0%,#1d4ed8 60%,#2563eb 100%);padding:1.5rem;color:#fff;border-radius:.5rem .5rem 0 0;position:relative;overflow:hidden">
+                <div style="position:absolute;right:-30px;top:-30px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.07)"></div>
+                <div class="d-flex align-items-center gap-3 position-relative" style="z-index:1">
+                    <div style="width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:1.3rem;font-weight:700;color:#fff;flex-shrink:0;border:2px solid rgba(255,255,255,.3)">{{ $initials }}</div>
+                    <div>
+                        <div style="font-size:1.05rem;font-weight:700;line-height:1.2">{{ $employee->name }}</div>
+                        <div style="font-size:.78rem;opacity:.75;margin-top:.15rem">{{ $employee->position ?? 'Karyawan' }}</div>
+                        <div style="font-size:.72rem;opacity:.6">{{ $employee->company->name ?? '-' }}</div>
+                    </div>
                 </div>
-                <h5 class="fw-bold mb-1">{{ $employee->name }}</h5>
-                <p class="text-muted mb-1" style="font-size:.85rem">{{ $employee->position ?? 'Karyawan' }}</p>
-                <p class="text-muted mb-3" style="font-size:.8rem">{{ $employee->company->name ?? '-' }}</p>
-                <div class="d-flex gap-2 justify-content-center mb-1">
+            </div>
+
+            <div class="card-body text-center py-3 px-4">
+                <div class="d-flex gap-2 justify-content-center flex-wrap">
                     <a href="{{ route('employees.edit', $employee) }}" class="btn btn-primary btn-sm"><i class="bi bi-pencil me-1"></i>Edit</a>
                     <form method="POST" action="{{ route('employees.destroy', $employee) }}" onsubmit="return confirm('Hapus karyawan ini?')">
                         @csrf @method('DELETE')
                         <button class="btn btn-outline-danger btn-sm"><i class="bi bi-trash3 me-1"></i>Hapus</button>
                     </form>
                 </div>
+                {{-- Social links --}}
+                @if($employee->github_url || $employee->gitlab_url || $employee->linkedin_url || $employee->portfolio_url)
+                <div class="d-flex justify-content-center gap-2 mt-3 flex-wrap">
+                    @if($employee->github_url)
+                        <a href="{{ $employee->github_url }}" target="_blank" class="btn btn-sm btn-outline-dark"><i class="bi bi-github"></i></a>
+                    @endif
+                    @if($employee->gitlab_url)
+                        <a href="{{ $employee->gitlab_url }}" target="_blank" class="btn btn-sm" style="border:1px solid #fc6d26;color:#fc6d26"><i class="bi bi-gitlab"></i></a>
+                    @endif
+                    @if($employee->linkedin_url)
+                        <a href="{{ $employee->linkedin_url }}" target="_blank" class="btn btn-sm" style="border:1px solid #0a66c2;color:#0a66c2"><i class="bi bi-linkedin"></i></a>
+                    @endif
+                    @if($employee->portfolio_url)
+                        <a href="{{ $employee->portfolio_url }}" target="_blank" class="btn btn-sm btn-outline-secondary"><i class="bi bi-globe"></i></a>
+                    @endif
+                </div>
+                @endif
             </div>
+
             <div class="card-footer bg-transparent p-0">
                 <ul class="list-group list-group-flush">
                     <li class="list-group-item px-4 py-3">
@@ -53,12 +82,14 @@
                             </div>
                         </div>
                     </li>
+                    @if($isAdmin)
                     <li class="list-group-item px-4 py-3">
                         <div class="row g-0">
                             <div class="col-5 text-muted" style="font-size:.8rem">Gaji Pokok</div>
                             <div class="col-7 fw-semibold text-success" style="font-size:.85rem">Rp {{ number_format($employee->base_salary, 0, ',', '.') }}</div>
                         </div>
                     </li>
+                    @endif
                     @if($employee->email)
                     <li class="list-group-item px-4 py-3">
                         <div class="row g-0">
@@ -147,7 +178,8 @@
             </div>
         </div>
     </div>
-    {{-- Earnings Summary --}}
+    {{-- Earnings Summary — admin only --}}
+    @if($isAdmin)
     <div class="col-lg-8">
         <div class="card h-100">
             <div class="card-header">
@@ -185,6 +217,81 @@
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+    @else
+    <div class="col-lg-8">
+        <div class="card h-100">
+            <div class="card-body p-4 d-flex flex-column gap-3">
+                <div class="d-flex align-items-start gap-3">
+                    <div class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0" style="width:48px;height:48px">
+                        <i class="bi bi-person-badge-fill text-primary fs-5"></i>
+                    </div>
+                    <div>
+                        <div class="fw-semibold">{{ $employee->name }}</div>
+                        <div class="text-muted" style="font-size:.85rem">{{ $employee->position ?? '-' }} · {{ $employee->department ?? '-' }}</div>
+                        <div class="text-muted" style="font-size:.8rem">{{ $employee->company->name ?? '-' }}</div>
+                    </div>
+                </div>
+                <div class="row g-2" style="font-size:.85rem">
+                    @if($employee->grade)<div class="col-6"><span class="text-muted">Grade:</span> <strong>{{ $employee->grade }}</strong></div>@endif
+                    @if($employee->employee_category)<div class="col-6"><span class="text-muted">Kategori:</span> <span class="badge bg-{{ $employee->employee_category->badgeColor() }} bg-opacity-10 text-{{ $employee->employee_category->badgeColor() }}">{{ $employee->employee_category->label() }}</span></div>@endif
+                    @if($employee->contract_start)<div class="col-12"><span class="text-muted">Periode Kontrak:</span> <strong>{{ $employee->contract_start->isoFormat('D MMM YYYY') }}</strong><span class="text-muted mx-1">→</span><strong>{{ $employee->contract_end?->isoFormat('D MMM YYYY') ?? 'Permanen' }}</strong></div>@endif
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
+
+    {{-- Contract Details --}}
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex align-items-center justify-content-between">
+                <span class="card-title mb-0"><i class="bi bi-file-earmark-text me-2 text-primary"></i>Contract Details</span>
+                <div class="d-flex gap-2">
+                    <a href="{{ route('contract-documents.index', ['employee_id' => $employee->id]) }}" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-list-ul me-1"></i>Daftar Kontrak
+                    </a>
+                    <a href="{{ route('contract-documents.create', ['employee_id' => $employee->id]) }}" class="btn btn-sm btn-primary">
+                        <i class="bi bi-plus-lg me-1"></i>Kontrak Baru
+                    </a>
+                </div>
+            </div>
+
+            @if($employee->contractDocuments->isEmpty())
+                <div class="card-body text-center py-4 text-muted">
+                    <i class="bi bi-file-earmark-x fs-3 d-block mb-2 opacity-50"></i>
+                    Belum ada kontrak kerja untuk karyawan ini.
+                </div>
+            @else
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Nomor Kontrak</th>
+                                <th>Tanggal</th>
+                                <th>Nilai</th>
+                                <th>Dibuat Oleh</th>
+                                <th class="text-end">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($employee->contractDocuments as $contract)
+                                <tr>
+                                    <td class="fw-semibold">{{ $contract->contract_number }}</td>
+                                    <td style="font-size:.82rem">{{ $contract->contract_date?->isoFormat('D MMM YYYY') ?? '-' }}</td>
+                                    <td style="font-size:.82rem">{{ $contract->contract_value ? 'Rp ' . number_format($contract->contract_value, 0, ',', '.') : '-' }}</td>
+                                    <td style="font-size:.82rem">{{ $contract->creator?->name ?? '-' }}</td>
+                                    <td class="text-end">
+                                        <a href="{{ route('contract-documents.show', $contract) }}" class="btn btn-sm btn-outline-primary">Lihat</a>
+                                        <a href="{{ route('contract-documents.edit', $contract) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @endif
         </div>
     </div>
 
@@ -506,6 +613,188 @@
             </div>
         </div>
     </div>
+
+    {{-- Links & Portfolio --}}
+    @if($employee->github_url || $employee->gitlab_url || $employee->linkedin_url || $employee->portfolio_url || $employee->portfolios->isNotEmpty())
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex align-items-center justify-content-between">
+                <span class="card-title mb-0"><i class="bi bi-link-45deg me-2 text-primary"></i>Profil Profesional &amp; Portfolio</span>
+                <button class="btn btn-sm btn-primary" data-bs-toggle="collapse" data-bs-target="#uploadPortfolioForm" aria-expanded="false">
+                    <i class="bi bi-upload me-1"></i>Upload Portfolio
+                </button>
+            </div>
+
+            {{-- Links --}}
+            @if($employee->github_url || $employee->gitlab_url || $employee->linkedin_url || $employee->portfolio_url)
+            <div class="card-body pb-0 pt-3">
+                <div class="d-flex flex-wrap gap-2">
+                    @if($employee->github_url)
+                        <a href="{{ $employee->github_url }}" target="_blank" class="btn btn-outline-dark btn-sm">
+                            <i class="bi bi-github me-1"></i>GitHub
+                        </a>
+                    @endif
+                    @if($employee->gitlab_url)
+                        <a href="{{ $employee->gitlab_url }}" target="_blank" class="btn btn-sm" style="border:1px solid #fc6d26;color:#fc6d26">
+                            <i class="bi bi-gitlab me-1"></i>GitLab
+                        </a>
+                    @endif
+                    @if($employee->linkedin_url)
+                        <a href="{{ $employee->linkedin_url }}" target="_blank" class="btn btn-sm" style="border:1px solid #0a66c2;color:#0a66c2">
+                            <i class="bi bi-linkedin me-1"></i>LinkedIn
+                        </a>
+                    @endif
+                    @if($employee->portfolio_url)
+                        <a href="{{ $employee->portfolio_url }}" target="_blank" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-globe me-1"></i>Website / Portfolio
+                        </a>
+                    @endif
+                </div>
+            </div>
+            @endif
+
+            {{-- Upload form --}}
+            <div class="collapse" id="uploadPortfolioForm">
+                <div class="card-body border-top bg-light py-3 px-4">
+                    @if(session('portfolio_success'))
+                        <div class="alert alert-success alert-dismissible py-2 mb-3" role="alert">
+                            {{ session('portfolio_success') }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    @endif
+                    <form method="POST" action="{{ route('employee-portfolios.store', $employee) }}" enctype="multipart/form-data">
+                        @csrf
+                        <div class="row g-3 align-items-end">
+                            <div class="col-md-4">
+                                <label class="form-label fw-medium" style="font-size:.85rem">Nama / Keterangan <span class="text-danger">*</span></label>
+                                <input type="text" name="label" class="form-control form-control-sm @error('label') is-invalid @enderror"
+                                    value="{{ old('label') }}" placeholder="cth. CV 2026, Sertifikat AWS, Project X" required>
+                                @error('label')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium" style="font-size:.85rem">File <span class="text-danger">*</span></label>
+                                <input type="file" name="file" class="form-control form-control-sm @error('file') is-invalid @enderror"
+                                    accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.zip" required>
+                                <div class="form-text" style="font-size:.72rem">PDF, JPG, PNG, DOC, DOCX, ZIP — maks. 20 MB</div>
+                                @error('file')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
+                            <div class="col-md-2">
+                                <button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-upload"></i></button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            {{-- Portfolio list --}}
+            @if($employee->portfolios->isNotEmpty())
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Nama Portfolio</th>
+                            <th>Ukuran</th>
+                            <th>Diunggah</th>
+                            <th class="text-end">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($employee->portfolios as $pf)
+                        <tr>
+                            <td>
+                                <i class="bi bi-file-earmark{{ $pf->isPdf() ? '-pdf text-danger' : ($pf->isImage() ? '-image text-info' : '') }} me-2"></i>
+                                <span class="fw-medium" style="font-size:.88rem">{{ $pf->label }}</span>
+                                <div class="text-muted" style="font-size:.75rem">{{ $pf->original_name }}</div>
+                            </td>
+                            <td class="text-muted" style="font-size:.82rem">{{ $pf->fileSizeFormatted() }}</td>
+                            <td class="text-muted" style="font-size:.8rem">
+                                {{ $pf->created_at->format('d M Y') }}<br>
+                                <span style="font-size:.72rem">{{ $pf->uploader?->name ?? '-' }}</span>
+                            </td>
+                            <td class="text-end">
+                                <div class="d-flex gap-1 justify-content-end">
+                                    @if($pf->isViewable())
+                                        <a href="{{ route('employee-portfolios.show', [$employee, $pf]) }}" target="_blank" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></a>
+                                    @endif
+                                    <a href="{{ route('employee-portfolios.show', [$employee, $pf]) }}?download=1" class="btn btn-sm btn-outline-secondary"><i class="bi bi-download"></i></a>
+                                    <form method="POST" action="{{ route('employee-portfolios.destroy', [$employee, $pf]) }}"
+                                        onsubmit="return confirm('Hapus portfolio ini?')">
+                                        @csrf @method('DELETE')
+                                        <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash3"></i></button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+            @else
+            <div class="card-body text-center py-4 text-muted" style="font-size:.85rem">
+                <i class="bi bi-folder2-open d-block mb-1 fs-3 opacity-25"></i>
+                Belum ada file portfolio. Klik <strong>Upload Portfolio</strong> untuk menambahkan.
+            </div>
+            @endif
+        </div>
+    </div>
+    @endif
+
+    {{-- Projects --}}
+    @if($employee->projects->isNotEmpty())
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex align-items-center justify-content-between">
+                <span class="card-title mb-0"><i class="bi bi-kanban me-2 text-primary"></i>Project yang Diikuti</span>
+                <a href="{{ route('project-plan.index') }}" class="btn btn-sm btn-outline-secondary">Lihat Semua &rarr;</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" style="font-size:.85rem">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Project</th>
+                            <th>Klien</th>
+                            <th>Peran</th>
+                            <th>Bergabung</th>
+                            <th>Status</th>
+                            <th class="text-end">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($employee->projects as $proj)
+                        @php [$statusLabel, $statusColor] = $proj->statusBadge(); @endphp
+                        <tr>
+                            <td>
+                                <div class="fw-semibold">{{ $proj->name }}</div>
+                                <div class="text-muted" style="font-size:.75rem">{{ $proj->code }}</div>
+                            </td>
+                            <td class="text-muted">{{ $proj->client->name ?? '—' }}</td>
+                            <td>
+                                @if($proj->pivot->role)
+                                    <span class="badge bg-primary bg-opacity-10 text-primary" style="font-size:.75rem">{{ $proj->pivot->role }}</span>
+                                @else
+                                    <span class="text-muted">—</span>
+                                @endif
+                            </td>
+                            <td class="text-muted">
+                                @php
+                                    $joinedAt = $proj->pivot->joined_at;
+                                    echo $joinedAt ? (\Carbon\Carbon::parse($joinedAt)->isoFormat('D MMM YYYY')) : '—';
+                                @endphp
+                            </td>
+                            <td>
+                                <span class="badge bg-{{ $statusColor }} bg-opacity-10 text-{{ $statusColor }}" style="font-size:.72rem">{{ $statusLabel }}</span>
+                            </td>
+                            <td class="text-end">
+                                <a href="{{ route('project-plan.show', $proj) }}" class="btn btn-sm btn-outline-primary">Lihat</a>
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    @endif
 
     {{-- Image preview modal --}}
     <div class="modal fade" id="docViewModal" tabindex="-1" aria-labelledby="docViewModalLabel" aria-hidden="true">

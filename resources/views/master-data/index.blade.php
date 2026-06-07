@@ -8,7 +8,7 @@
 <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
     <div>
         <h4 class="mb-0 fw-bold">Data Master</h4>
-        <p class="text-muted small mb-0">Kelola daftar Jabatan, Departemen, dan Kategori Karyawan</p>
+        <p class="text-muted small mb-0">Kelola daftar Jabatan, Departemen, Pihak Pertama, dan Kategori Karyawan</p>
     </div>
 </div>
 
@@ -31,6 +31,12 @@
                 <a class="nav-link {{ $tab === 'categories' ? 'active' : '' }}" href="{{ route('master-data.index', ['tab'=>'categories']) }}">
                     <i class="bi bi-tags me-1"></i>Kategori Karyawan
                     <span class="badge bg-secondary bg-opacity-10 text-secondary ms-1">{{ count($categories) }}</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {{ $tab === 'first-parties' ? 'active' : '' }}" href="{{ route('master-data.index', ['tab'=>'first-parties']) }}">
+                    <i class="bi bi-building me-1"></i>Pihak Pertama
+                    <span class="badge bg-secondary bg-opacity-10 text-secondary ms-1">{{ $firstParties->count() }}</span>
                 </a>
             </li>
         </ul>
@@ -73,8 +79,13 @@
                             @endif
                         </td>
                         <td class="text-end">
-                            <button class="btn btn-sm btn-outline-secondary"
-                                onclick="editPosition({{ $p->id }}, @js($p->name), @js($p->description), {{ $p->is_active ? 'true' : 'false' }})">
+                            <button
+                                class="btn btn-sm btn-outline-secondary btn-edit-position"
+                                data-id="{{ $p->id }}"
+                                data-name="{{ $p->name }}"
+                                data-description="{{ $p->description }}"
+                                data-is-active="{{ $p->is_active ? '1' : '0' }}"
+                            >
                                 <i class="bi bi-pencil"></i>
                             </button>
                             <form method="POST" action="{{ route('master-data.positions.destroy', $p) }}" class="d-inline"
@@ -126,8 +137,13 @@
                             @endif
                         </td>
                         <td class="text-end">
-                            <button class="btn btn-sm btn-outline-secondary"
-                                onclick="editDepartment({{ $d->id }}, @js($d->name), @js($d->description), {{ $d->is_active ? 'true' : 'false' }})">
+                            <button
+                                class="btn btn-sm btn-outline-secondary btn-edit-department"
+                                data-id="{{ $d->id }}"
+                                data-name="{{ $d->name }}"
+                                data-description="{{ $d->description }}"
+                                data-is-active="{{ $d->is_active ? '1' : '0' }}"
+                            >
                                 <i class="bi bi-pencil"></i>
                             </button>
                             <form method="POST" action="{{ route('master-data.departments.destroy', $d) }}" class="d-inline"
@@ -139,6 +155,66 @@
                     </tr>
                 @empty
                     <tr><td colspan="5" class="text-center text-muted py-4">Belum ada data departemen.</td></tr>
+                @endforelse
+                </tbody>
+            </table>
+        </div>
+
+    {{-- ── First Parties tab ───────────────────────────────────── --}}
+    @elseif($tab === 'first-parties')
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <small class="text-muted">Master pihak pertama untuk dipakai ulang pada dokumen kontrak dan dokumen legal lainnya.</small>
+            <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addFirstPartyModal">
+                <i class="bi bi-plus-lg me-1"></i> Tambah Pihak Pertama
+            </button>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Nama Perusahaan</th>
+                        <th>Perwakilan</th>
+                        <th>Jabatan</th>
+                        <th>Alamat</th>
+                        <th class="text-center">Status</th>
+                        <th class="text-end" style="width:130px">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @forelse($firstParties as $fp)
+                    <tr>
+                        <td class="fw-semibold">{{ $fp->name }}</td>
+                        <td>{{ $fp->representative_name ?: '—' }}</td>
+                        <td>{{ $fp->representative_position ?: '—' }}</td>
+                        <td class="text-muted small">{{ $fp->address ?: '—' }}</td>
+                        <td class="text-center">
+                            @if($fp->is_active)
+                                <span class="badge bg-success bg-opacity-10 text-success">Aktif</span>
+                            @else
+                                <span class="badge bg-secondary bg-opacity-10 text-secondary">Nonaktif</span>
+                            @endif
+                        </td>
+                        <td class="text-end">
+                            <button
+                                class="btn btn-sm btn-outline-secondary btn-edit-first-party"
+                                data-id="{{ $fp->id }}"
+                                data-name="{{ $fp->name }}"
+                                data-representative-name="{{ $fp->representative_name }}"
+                                data-representative-position="{{ $fp->representative_position }}"
+                                data-address="{{ $fp->address }}"
+                                data-is-active="{{ $fp->is_active ? '1' : '0' }}"
+                            >
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <form method="POST" action="{{ route('master-data.first-parties.destroy', $fp) }}" class="d-inline"
+                                  onsubmit="return confirm('Hapus data pihak pertama {{ $fp->name }}?')">
+                                @csrf @method('DELETE')
+                                <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                            </form>
+                        </td>
+                    </tr>
+                @empty
+                    <tr><td colspan="6" class="text-center text-muted py-4">Belum ada data pihak pertama.</td></tr>
                 @endforelse
                 </tbody>
             </table>
@@ -181,6 +257,81 @@
         </div>
     @endif
 
+    </div>
+</div>
+
+{{-- ── Modals: First Parties ───────────────────────────────────── --}}
+<div class="modal fade" id="addFirstPartyModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form method="POST" action="{{ route('master-data.first-parties.store') }}">
+            @csrf
+            <div class="modal-content">
+                <div class="modal-header"><h5 class="modal-title">Tambah Pihak Pertama</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Nama Perusahaan <span class="text-danger">*</span></label>
+                        <input name="name" class="form-control" required maxlength="255" placeholder="Contoh: PT Lingkar Inovasi Muda">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Nama Perwakilan</label>
+                        <input name="representative_name" class="form-control" maxlength="255" placeholder="Contoh: Budi Santoso">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Jabatan Perwakilan</label>
+                        <input name="representative_position" class="form-control" maxlength="255" placeholder="Contoh: Direktur Utama">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Alamat</label>
+                        <textarea name="address" class="form-control" rows="2"></textarea>
+                    </div>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" name="is_active" value="1" id="addFpActive" checked>
+                        <label class="form-check-label" for="addFpActive">Aktif (muncul di form dokumen)</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary">Simpan</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="modal fade" id="editFirstPartyModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form method="POST" id="editFirstPartyForm">
+            @csrf @method('PUT')
+            <div class="modal-content">
+                <div class="modal-header"><h5 class="modal-title">Edit Pihak Pertama</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Nama Perusahaan <span class="text-danger">*</span></label>
+                        <input name="name" id="edit-fp-name" class="form-control" required maxlength="255">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Nama Perwakilan</label>
+                        <input name="representative_name" id="edit-fp-representative-name" class="form-control" maxlength="255">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Jabatan Perwakilan</label>
+                        <input name="representative_position" id="edit-fp-representative-position" class="form-control" maxlength="255">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Alamat</label>
+                        <textarea name="address" id="edit-fp-address" class="form-control" rows="2"></textarea>
+                    </div>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" name="is_active" value="1" id="edit-fp-active">
+                        <label class="form-check-label" for="edit-fp-active">Aktif (muncul di form dokumen)</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
+                </div>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -319,5 +470,50 @@ function editDepartment(id, name, description, isActive) {
     document.getElementById('edit-dept-active').checked = !!isActive;
     new bootstrap.Modal(document.getElementById('editDepartmentModal')).show();
 }
+function editFirstParty(id, name, representativeName, representativePosition, address, isActive) {
+    document.getElementById('editFirstPartyForm').action = '{{ url("master-data/first-parties") }}/' + id;
+    document.getElementById('edit-fp-name').value = name || '';
+    document.getElementById('edit-fp-representative-name').value = representativeName || '';
+    document.getElementById('edit-fp-representative-position').value = representativePosition || '';
+    document.getElementById('edit-fp-address').value = address || '';
+    document.getElementById('edit-fp-active').checked = !!isActive;
+    new bootstrap.Modal(document.getElementById('editFirstPartyModal')).show();
+}
+
+document.addEventListener('click', function (event) {
+    const positionButton = event.target.closest('.btn-edit-position');
+    if (positionButton) {
+        editPosition(
+            positionButton.dataset.id,
+            positionButton.dataset.name,
+            positionButton.dataset.description,
+            positionButton.dataset.isActive === '1'
+        );
+        return;
+    }
+
+    const departmentButton = event.target.closest('.btn-edit-department');
+    if (departmentButton) {
+        editDepartment(
+            departmentButton.dataset.id,
+            departmentButton.dataset.name,
+            departmentButton.dataset.description,
+            departmentButton.dataset.isActive === '1'
+        );
+        return;
+    }
+
+    const firstPartyButton = event.target.closest('.btn-edit-first-party');
+    if (firstPartyButton) {
+        editFirstParty(
+            firstPartyButton.dataset.id,
+            firstPartyButton.dataset.name,
+            firstPartyButton.dataset.representativeName,
+            firstPartyButton.dataset.representativePosition,
+            firstPartyButton.dataset.address,
+            firstPartyButton.dataset.isActive === '1'
+        );
+    }
+});
 </script>
 @endpush

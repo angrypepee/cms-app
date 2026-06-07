@@ -21,6 +21,11 @@ class Project extends Model
     public function company()    { return $this->belongsTo(Company::class); }
     public function quotations() { return $this->hasMany(Quotation::class); }
     public function invoices()   { return $this->hasMany(Invoice::class); }
+    public function members()    { return $this->hasMany(ProjectMember::class); }
+    public function employees()  { return $this->belongsToMany(Employee::class, 'project_members')->using(\App\Models\Pivots\ProjectMemberPivot::class)->withPivot('role','notes','joined_at','work_status','work_started_at','work_completed_at')->withTimestamps(); }
+    public function links()      { return $this->hasMany(ProjectLink::class)->orderBy('type'); }
+    public function files()      { return $this->hasMany(ProjectFile::class)->latest(); }
+    public function workHistories() { return $this->hasMany(\App\Models\ProjectWorkHistory::class)->latest(); }
 
     public static function generateCode(): string
     {

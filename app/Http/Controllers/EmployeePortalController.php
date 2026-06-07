@@ -430,6 +430,201 @@ class EmployeePortalController extends Controller
 
     // ── Calendar ─────────────────────────────────────────────────────────────
 
+    public function rejectContract(\Illuminate\Http\Request $request, \App\Models\ContractDocument $contract)
+    {
+        $this->authorizeEmployee();
+        $employee = $this->getEmployee();
+
+        abort_if($contract->employee_id !== $employee->id, 403, 'Anda tidak berhak menolak kontrak ini.');
+        abort_if($contract->isSignedByEmployee(), 422, 'Anda sudah menandatangani kontrak ini.');
+        abort_if($contract->isCancelled() || $contract->isRejected(), 422, 'Kontrak ini sudah tidak aktif.');
+
+        $request->validate(['reason' => 'nullable|string|max:500']);
+
+        $contract->update([
+            'status'           => 'rejected',
+            'rejection_reason' => $request->input('reason'),
+            'rejected_at'      => now(),
+            'rejected_by'      => auth()->id(),
+        ]);
+
+        return back()->with('success', 'Kontrak berhasil ditolak. Admin akan dihubungi untuk tindak lanjut.');
+    }
+
+    public function myContracts()
+    {
+        $this->authorizeEmployee();
+        $employee = $this->getEmployee();
+
+        $contracts = \App\Models\ContractDocument::where('employee_id', $employee->id)
+            ->with(['signer', 'signerEmployee'])
+            ->orderByDesc('contract_date')
+            ->orderByDesc('id')
+            ->get();
+
+        return view('employee-portal.contracts', compact('employee', 'contracts'));
+    }
+
+    public function signContractAsEmployee(Request $request, \App\Models\ContractDocument $contract)
+    {
+        $this->authorizeEmployee();
+        $employee = $this->getEmployee();
+
+        // Only the contract's own employee can sign as pihak kedua
+        abort_if($contract->employee_id !== $employee->id, 403, 'Anda tidak berhak menandatangani kontrak ini.');
+        abort_if($contract->isSignedByEmployee(), 422, 'Anda sudah menandatangani kontrak ini.');
+
+        $user = auth()->user();
+
+        $signatureNumber = 'SGN-EMP-' . now()->format('YmdHis') . '-C' . $contract->id . '-U' . $user->id . '-' . \Illuminate\Support\Str::upper(\Illuminate\Support\Str::random(6));
+
+        $qrPayload = json_encode([
+            'type'             => 'contract-employee-signature',
+            'signature_number' => $signatureNumber,
+            'contract_id'      => $contract->id,
+            'contract_number'  => $contract->contract_number,
+            'signer_id'        => $user->id,
+            'signer_name'      => $user->name,
+            'employee_id'      => $employee->id,
+            'employee_name'    => $employee->name,
+            'signed_at'        => now()->toIso8601String(),
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+        $qrResult = (new \Endroid\QrCode\Builder\Builder(new \Endroid\QrCode\Writer\SvgWriter()))
+            ->build(
+                data: $qrPayload,
+                encoding: new \Endroid\QrCode\Encoding\Encoding('UTF-8'),
+                errorCorrectionLevel: \Endroid\QrCode\ErrorCorrectionLevel::High,
+                size: 220,
+                margin: 8,
+            );
+
+        $contract->update([
+            'signed_by_employee'       => $user->id,
+            'signed_at_employee'       => now(),
+            'signature_number_employee' => $signatureNumber,
+            'signature_qr_employee'    => $qrResult->getDataUri(),
+        ]);
+
+        return back()->with('success', 'Kontrak berhasil Anda tandatangani secara digital.');
+    }
+
+    public function myProfile()
+    {
+        $this->authorizeEmployee();
+        $employee = $this->getEmployee()->load('company', 'portfolios.uploader', 'projects.client');
+        $user = auth()->user();
+        return view('employee-portal.profile', compact('employee', 'user'));
+    }
+
+    public function updateProfile(Request $request)
+    {
+        $this->authorizeEmployee();
+        $employee = $this->getEmployee();
+
+        $validated = $request->validate([
+            'github_url'    => 'nullable|url|max:255',
+            'gitlab_url'    => 'nullable|url|max:255',
+            'linkedin_url'  => 'nullable|url|max:255',
+            'portfolio_url' => 'nullable|url|max:255',
+        ]);
+
+        $employee->update($validated);
+
+        // Update user password if provided
+        if ($request->filled('new_password')) {
+            $request->validate([
+                'current_password'      => 'required|current_password',
+                'new_password'          => 'required|string|min:8|confirmed',
+            ]);
+            auth()->user()->update([
+                'password' => \Illuminate\Support\Facades\Hash::make($request->new_password),
+            ]);
+        }
+
+        return back()->with('success', 'Profil berhasil diperbarui.');
+    }
+
+    public function myProjects()
+    {
+        $this->authorizeEmployee();
+        $employee = $this->getEmployee();
+
+        $projects = \App\Models\Project::with([
+                'client',
+                'company',
+                'links',
+                'files.uploader',
+                'employees',
+            ])
+            ->whereHas('employees', fn($q) => $q->where('employees.id', $employee->id))
+            ->withCount('employees')
+            ->orderByRaw("FIELD(status,'active','in_progress','planning','on_hold','completed','cancelled')")
+            ->orderBy('start_date')
+            ->get()
+            ->each(function ($project) use ($employee) {
+                $project->my_pivot = $project->employees()
+                    ->where('employees.id', $employee->id)
+                    ->first()?->pivot;
+                // Load this employee's history for the project
+                $project->my_history = \App\Models\ProjectWorkHistory::where('project_id', $project->id)
+                    ->where('employee_id', $employee->id)
+                    ->latest()
+                    ->get();
+            });
+
+        return view('employee-portal.projects', compact('employee', 'projects'));
+    }
+
+    public function updateWorkStatus(Request $request, \App\Models\Project $project)
+    {
+        $this->authorizeEmployee();
+        $employee = $this->getEmployee();
+
+        $member = $project->members()->where('employee_id', $employee->id)->firstOrFail();
+
+        $validated = $request->validate([
+            'work_status' => 'required|in:not_started,in_progress,completed',
+        ]);
+
+        $oldStatus = $member->work_status ?? 'not_started';
+        $newStatus = $validated['work_status'];
+
+        $updates = ['work_status' => $newStatus];
+
+        if ($newStatus === 'in_progress' && !$member->work_started_at) {
+            $updates['work_started_at'] = now();
+        }
+        if ($newStatus === 'completed') {
+            $updates['work_completed_at'] = now();
+            if (!$member->work_started_at) {
+                $updates['work_started_at'] = now();
+            }
+        }
+        if ($newStatus === 'not_started') {
+            $updates['work_started_at'] = null;
+            $updates['work_completed_at'] = null;
+        }
+
+        $project->members()->where('employee_id', $employee->id)->update($updates);
+
+        // Log history
+        \App\Models\ProjectWorkHistory::create([
+            'project_id'  => $project->id,
+            'employee_id' => $employee->id,
+            'logged_by'   => auth()->id(),
+            'from_status' => $oldStatus,
+            'to_status'   => $newStatus,
+            'note'        => match($newStatus) {
+                'in_progress' => 'Mulai mengerjakan pekerjaan.',
+                'completed'   => 'Menandai pekerjaan selesai.',
+                default       => 'Status dikembalikan ke belum dimulai.',
+            },
+        ]);
+
+        return back()->with('success', 'Status pekerjaan berhasil diperbarui.');
+    }
+
     public function calendar()
     {
         $this->authorizeEmployee();
