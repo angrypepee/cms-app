@@ -1,147 +1,64 @@
-# ⚠️ PRODUCTION SAFETY GUIDELINES
+# Production Safety Guidelines
 
-> **CRITICAL:** Cara yang AMAN dan TIDAK AMAN untuk manage database production.
-
----
-
-## 🚫 JANGAN PERNAH JALANKAN INI DI PRODUCTION
+## 🚨 CRITICAL - NEVER DO THIS IN PRODUCTION
 
 ```bash
-# ❌ DESTROY SELURUH DATA & TABEL!
-php artisan migrate:fresh --seed --force
-
-# ❌ ATAU
-php artisan migrate:fresh --force
-
-# ❌ ATAU
-php artisan migrate:fresh --seed
-```
-
-**Akibat:** Semua data yang sudah diinput pengguna akan **HILANG SELAMANYA**. Tidak bisa di-recover!
-
----
-
-## ✅ CARA YANG AMAN UNTUK UPDATE PRODUCTION
-
-### 1. Hanya Apply Migrations (RECOMMENDED)
-```bash
-# Menambah kolom baru, membuat tabel baru — SAFE
-php artisan migrate --force
-
-# Untuk environment production lebih eksplisit
-APP_ENV=production php artisan migrate --force
-```
-
-✅ **Aman:** Hanya menjalankan migrations yang belum dijalankan. Data existing TETAP AMAN.
-
-### 2. Hanya Seed Kontrak Baru (Untuk Signed Contracts)
-```bash
-# Hanya sign kontrak yang sudah ada — SAFE
-php artisan db:seed --class=SignAllContractDocumentsSeeder --force
-
-# Atau seed kelas lain yang tidak destroy data
-php artisan db:seed --class=SpecificSeeder --force
-```
-
-✅ **Aman:** Menambah data baru atau update existing records. Tidak drop tabel.
-
-### 3. Backup SEBELUM Operasi Besar
-```bash
-# BACKUP DULU
-docker compose exec -T db mysqldump -u root -proot payroll_app > backup-$(date +%Y%m%d-%H%M%S).sql
-
-# BARU jalankan migrate
-php artisan migrate --force
-
-# VERIFY hasil
+# ❌ WILL DELETE ALL DATA - NEVER USE IN PRODUCTION
+php artisan migrate:fresh
+php artisan migrate:reset
 php artisan tinker
+php artisan db:seed
 ```
 
----
+## ✅ SAFE PRODUCTION OPERATIONS
 
-## 📋 Checklist Sebelum Production Update
-
-- [ ] **Backup database** → `mysqldump` export ke file
-- [ ] **Review migrations** → Pastikan hanya ADD kolom, tidak DROP
-- [ ] **Test di staging/local** DULU → Jalankan migrate di lokal, pastikan berjalan
-- [ ] **Notify stakeholders** → Inform pengguna tentang maintenance window
-- [ ] **Plan rollback** → Siapkan backup untuk restore jika ada error
-- [ ] **Jalankan migrate** → `php artisan migrate --force`
-- [ ] **Verify data** → Cek database struktur dan data integritas
-- [ ] **Monitor logs** → Pantau app logs untuk error
-
----
-
-## 🔒 Environment-Specific Commands
-
-### Development (SAFE untuk experiment)
 ```bash
-# OK untuk develop & test
-php artisan migrate:fresh --seed --force
+# ✅ Safe - only runs new migrations
+php artisan migrate
+
+# ✅ Safe - creates backup
+mysqldump -u cms -pcms_secret cms_app > backup.sql
+
+# ✅ Safe - reads data only
+php artisan tinker --no-interaction  # (view only, no modifications)
 ```
 
-### Production (STRICT — data sensitif!)
-```bash
-# HANYA untuk schema updates
-APP_ENV=production php artisan migrate --force
+## 📋 Production Database Workflow
 
-# HANYA untuk seed data yang TIDAK destroy
-APP_ENV=production php artisan db:seed --class=SafeSeeder --force
-```
-
----
-
-## 🛑 Emergency: Data Accidentally Deleted
-
-Jika `migrate:fresh` terjalankan di production:
-
-1. **Cek apakah ada backup:**
+1. **Always backup BEFORE changes:**
    ```bash
-   ls -lah backup-*.sql
+   docker compose exec -T db mariadb-dump -u cms -pcms_secret cms_app > backups/pre-migration-$(date +%Y%m%d_%H%M%S).sql
    ```
 
-2. **Restore dari backup:**
-   ```bash
-   docker compose exec -T db mysql -u root -proot payroll_app < backup-20260607-150000.sql
-   ```
+2. **Test migrations on staging first**
+   - Never run untested migrations on production
+   - Verify data integrity after each migration
 
-3. **Jika tidak ada backup:** ❌ Data sudah tidak bisa di-recover.
+3. **Keep automated daily backups:**
+   - Store in `/storage/backups/`
+   - Rotate old backups monthly
+   - Test backup restoration monthly
 
----
+4. **Monitor for issues:**
+   - Check application logs: `/storage/logs/`
+   - Verify database integrity: `REPAIR TABLE [table_name]`
+   - Monitor disk space for backups
 
-## 📚 Reference: Database Operations Comparison
+## 🔐 Backup Recovery
 
-| Operation | Command | Production | Development | Data Loss Risk |
-|-----------|---------|-----------|-------------|----------------|
-| **Fresh + Seed** | `migrate:fresh --seed` | ❌ NEVER | ✅ OK | 🔴 100% |
-| **Only Migrate** | `migrate` | ✅ SAFE | ✅ OK | 🟢 0% |
-| **Only Seed** | `db:seed` | ✅ SAFE* | ✅ OK | 🟡 ~5%** |
-| **Backup** | `mysqldump` | ✅ REQUIRED | ✅ Optional | 🟢 0% |
-| **Restore** | `mysql < backup.sql` | ✅ RECOVERY | ✅ OK | 🟢 0% |
+If database is corrupted, restore from backup:
 
-\* Seed SAFE jika seeder tidak destroy tabel
-\*\* Seed risk tergantung seeder logic
-
----
-
-## 🎯 Summary
-
-**PRODUCTION RULE:**
-```
-migrate:fresh = ☠️ DEATH (no exceptions!)
-migrate       = ✅ SAFE (always use this)
-db:seed       = ✅ SAFE (if seeder is safe)
-mysqldump     = ✅ BACKUP (always do this first)
+```bash
+cd /Applications/MAMP/htdocs/payroll_lim
+docker compose exec -T db mariadb -u cms -pcms_secret cms_app < storage/backups/[backup_file].sql
 ```
 
-**Developer Remember:**
-- DEVELOPMENT = ekspermen boleh
-- PRODUCTION = data konsumen, HARUS hati-hati
-- BACKUP = universal safety net
+## 📞 Emergency Contact
 
----
+- Production backup location: `storage/backups/`
+- Recent backups:
+  - `PRODUCTION_RESTORED_20260607_225712.sql` (Latest - June 7)
+  - `prod_cms_app_20260606_150839.sql` (June 6 @ 15:08)
 
-## Last Updated
-- **Date:** 2026-06-07
-- **Author:** Development Team
-- **Status:** 🔴 CRITICAL - READ & ACKNOWLEDGE
+**Last incident:** Database replaced with dev data on June 7, 2026 @ 22:30
+**Recovery time:** < 5 minutes via backup restore

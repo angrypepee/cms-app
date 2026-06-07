@@ -59,7 +59,6 @@ class DatabaseSeeder extends Seeder
         }
 
         $this->call(DemoSeeder::class);
-        $this->call(ContractDocumentsDemoSeeder::class);
         $this->call(HolidaySeeder::class);
         $this->call(HistoricalDataSeeder::class);
         $this->call(B2BDemoSeeder::class);
