@@ -25,6 +25,19 @@ services:
       db:
         condition: service_healthy
 
+  vite:
+    image: node:20-alpine
+    container_name: cms-app-vite
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    volumes:
+      - .:/workspace
+    working_dir: /workspace
+    command: npm run dev
+    environment:
+      CHOKIDAR_USEPOLLING: "true"
+
   db:
     image: mariadb:11
     container_name: cms-db

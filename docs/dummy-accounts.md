@@ -8,7 +8,7 @@ After running `php artisan migrate:fresh --seed` all of the following accounts a
 
 | # | Name              | Email                     | Password   | Role               | Title                        |
 |---|-------------------|---------------------------|------------|--------------------|------------------------------|
-| 1 | Admin Utama       | admin@payrolllim.test     | `password` | **Administrator**  | Head of HR                   |
+| 1 | Admin Utama       | admin@payrolllim.test/superadmin@limgroup.com     | `password/admin123` | **Administrator**  | Head of HR                   |
 | 2 | HR Staff          | hr@payrolllim.test        | `password` | **HRD / Staff**    | HR Officer                   |
 | 3 | Kepala Penandatangan | signer@payrolllim.test | `password` | **Signature Admin**| Direktur Operasional         |
 | 4 | Test User         | test@example.com          | `password` | HRD / Staff        | *(none)*                     |
